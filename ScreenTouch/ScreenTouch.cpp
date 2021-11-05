@@ -20,6 +20,8 @@
 using namespace std;
 using namespace rapidjson;
 
+pthread_mutex_t	SCREENTOUCH_keyLockMutex = PTHREAD_MUTEX_INITIALIZER;
+
 uint16_t cmd = HCI_CMD_GATEWAY_CMD;
 uint8_t st_parRetry_cnt = 0x00;
 uint8_t st_parRsp_Max = 0x00;
@@ -223,7 +225,11 @@ void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = 500;
+	pthread_mutex_trylock(&SCREENTOUCH_keyLockMutex);
 	bufferDataUart.push(vrts_DataUartSend);
+	pthread_mutex_unlock(&SCREENTOUCH_keyLockMutex);
+
+#if !PRINTUART
 	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
 	for (int i = 0; i < 4; i++) {
 		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
@@ -235,6 +241,7 @@ void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_
 		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
 	}
 	printf("\n");
+#endif
 }
 
 

@@ -18,6 +18,8 @@
 
 using namespace std;
 
+#define PRINTUART			1
+
 extern bool 				gvrb_AddSceneLight;
 extern bool 				gvrb_AddGroupLight;
 extern bool					gvrb_Provision;
@@ -75,8 +77,12 @@ typedef struct uartSendDev_Vendor{
 	long 				timeWait;
 }uartSendDev_Vendor_t;
 
+#define MAX_MSG_MQTT 		2048
+typedef struct bufferDataMqtt{
+	char dataMqtt[MAX_MSG_MQTT];
+}bufferDataMqtt_t;
+
 extern queue<uartSendDev_t> bufferDataUart;
-extern queue<uartSendDev_Vendor_t> bufferDataUartVendor;
 
 uartSendDev_t AssignData(uint8_t *data,int length);
 

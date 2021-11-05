@@ -16,7 +16,6 @@ using namespace std;
 
 pthread_t vrpth_MqttThread;
 pthread_t vrpth_UartReadThread;
-pthread_t vrpth_UartWriteThread;
 
 SLogConfig slgCfg;
 
@@ -62,16 +61,15 @@ void GetDevicekey(){
 }
 
 int main() {
+	cout << "START" << endl;
 	slog_init("logfile", SLOG_FLAGS_ALL, 1);
 	slog_config_get(&slgCfg);
 	slog_config_set(&slgCfg);
-	GetDevicekey();
+//	GetDevicekey();
 	pthread_create(&vrpth_MqttThread, NULL, MQTT_Thread, NULL);
 	pthread_create(&vrpth_UartReadThread, NULL, GWINF_Thread, NULL);
-	pthread_create(&vrpth_UartWriteThread, NULL, GWITF_WriteUart, NULL);
 
 	pthread_join(vrpth_MqttThread,NULL);
 	pthread_join(vrpth_UartReadThread,NULL);
-	pthread_join(vrpth_UartWriteThread,NULL);
-	return 0;
+//	return 0;
 }

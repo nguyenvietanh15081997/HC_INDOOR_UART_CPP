@@ -3,7 +3,6 @@
 #define MQTT_HPP_
 
 #include <mosquitto.h>
-#include "../Include/Include.hpp"
 
 #define mqtt_host 			"10.10.10.1"
 #define mqtt_port 			1883

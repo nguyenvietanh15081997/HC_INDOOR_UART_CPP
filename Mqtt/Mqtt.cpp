@@ -5,6 +5,7 @@
 #include "../Mqtt/Mqtt.hpp"
 #include "../JsonHandle/JsonProcess.hpp"
 #include "../logging/slog.h"
+#include "../Include/Include.hpp"
 #include <time.h>
 
 clock_t start, end;
@@ -21,7 +22,8 @@ uint32_t timeout;
 
 using namespace std;
 using namespace rapidjson;
-queue<char * > bufferMqtt;
+
+queue<bufferDataMqtt_t> bufferMqtt;
 
 int mqtt_send(struct mosquitto *mosq, char *topic, char *msg) {
 	mosquitto_publish(mosq, NULL, topic, strlen(msg), msg, qos, 0);
@@ -36,21 +38,26 @@ void connect_callback(struct mosquitto *mosq, void *obj, int result) {
 }
 
 void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
-	char *msg = (char*) message->payload;
+	int lengthMsg = strlen((char *)message->payload);
+	bufferDataMqtt_t data = {{0}};
+	memcpy(data.dataMqtt,message->payload,lengthMsg+1);
 	Document document;
-	document.Parse(msg);
+	document.Parse(data.dataMqtt);
 	if(document.IsObject()){
-		slog_info("<mqtt>receive: %s", msg);
-		bufferMqtt.push(msg);
+		slog_info("<mqtt>receive: %s", data.dataMqtt);
+		bufferMqtt.push(data);
 	}
 	else {
 		slog_print(SLOG_WARN,1,"<mqtt>message invalid");
 	}
 	if (bufferMqtt.size() > 0) {
-		char *jobj = bufferMqtt.front();
-		JsonHandle(jobj);
+		cout << "POP" <<endl;
+		JsonHandle((char *)bufferMqtt.front().dataMqtt);
 		bufferMqtt.pop();
+
 	}
+	Document objDelete;
+	document.Swap(objDelete);
 }
 
 void* MQTT_Thread(void *argv) {
@@ -73,10 +80,10 @@ void* MQTT_Thread(void *argv) {
 		mosquitto_subscribe(mosq, NULL, TP_SUB, qos);
 		while (run) {
 			rc = abc = mosquitto_loop(mosq, -1, 1);
-			if(bufferMqtt.size() == 0) {
-				queue<char * > bufferEmpty;
-				swap(bufferMqtt, bufferEmpty);
-			}
+//			if(bufferMqtt.size() == 0) {
+//				queue<bufferMqtt_t > bufferEmpty;
+//				swap(bufferMqtt, bufferEmpty);
+//			}
 			if (run && rc) {
 				slog_warn("Connection mqtt error");
 				sleep(4);

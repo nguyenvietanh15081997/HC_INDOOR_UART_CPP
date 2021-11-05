@@ -7,6 +7,6 @@
 
 #include "../Include/Include.hpp"
 
-void JsonHandle(char *data);
+void JsonHandle(char * data);
 
 #endif

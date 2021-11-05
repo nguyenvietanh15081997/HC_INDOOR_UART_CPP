@@ -7,11 +7,12 @@
 #include "../Sensor/Sensor.hpp"
 #include "string.h"
 
+pthread_mutex_t CMDUART_key = PTHREAD_MUTEX_INITIALIZER;
 
-#define TIMEWAIT			450
+#define TIMEWAIT			400
 char *pHeaderCmd= "cmd";
 
-uint8_t parRetry_cnt = 0x01;
+uint8_t parRetry_cnt = 0x02;
 uint8_t parRsp_Max = 0x00;
 uint8_t parFuture = 0;
 
@@ -320,19 +321,22 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = TIMEWAIT;
+	pthread_mutex_trylock(&CMDUART_key);
 	bufferDataUart.push(vrts_DataUartSend);
-
-//	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
-//	for (int i = 0; i < 4; i++) {
-//		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
-//	}
-//	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
-//	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
-//	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
-//	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
-//		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
-//	}
-//	printf("\n");
+	pthread_mutex_unlock(&CMDUART_key);
+#if !PRINTUART
+	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
+	for (int i = 0; i < 4; i++) {
+		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
+	}
+	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
+	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
+	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
+	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
+		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
+	}
+	printf("\n");
+#endif
 }
 
 void HeartBeat(uint16_t cmd, uint16_t drsHeartbeat, uint16_t srcHeartbeat,
@@ -952,7 +956,7 @@ static void DimPercent(uint16_t adrDimPercent, uint8_t percent) {
 static void CmdResetAll(){
 	vrts_CMD_STRUCTURE.adr_dst[0] = 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_TYPE_SEND & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
 	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
@@ -975,17 +979,22 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_CMD_STRUCTURE.opCode00[2]= vrts_CMD_STRUCTURE.opCode00[3]=0;
 	vrts_CMD_STRUCTURE.retry_cnt = parRetry_cnt;
 	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
+	uint16_t timeWait = 0;
 	if(Func_vendor == SceneForRemote_DC_vendor_typedef){
 		SetSceneForRemote_DC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID);
+		timeWait = TIMEWAIT;
 	}
 	else if(Func_vendor == DelSceneForRemote_DC_vendor_typedef){
 		DelSceneForRemote_DC(adr, buttonID_controlCurtain, modeID_percentOpen);
+		timeWait = TIMEWAIT;
 	}
 	else if(Func_vendor == SceneForRemote_AC_vendor_typedef){
 		SetSceneForRemote_AC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID);
+		timeWait = TIMEWAIT;
 	}
 	else if(Func_vendor == DelSceneForRemote_AC_vendor_typedef){
 		DelSceneForRemote_AC(adr, buttonID_controlCurtain, modeID_percentOpen);
+		timeWait = TIMEWAIT;
 	}
 	else if(Func_vendor == SceneForSensor_LightPir_vendor_typedef){
 		RD_Sensor_data_tdef dataScene_Pir_Light_cmd1;
@@ -1063,15 +1072,19 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	}
 	else if(Func_vendor == SaveGateway_vendor_typedef){
 		SaveGateway(adr);
+		timeWait = 0;
 	}
 	else if(Func_vendor == AskTypeDevice_vendor_typedef){
 		AskTypeDevice(adr);
+		timeWait = 0;
 	}
 	else if(Func_vendor == SetTypeDevice_vendor_typedef){
 		SetTypeDevice(adr, type_hours, attrubute_minute, application_second);
+		timeWait = TIMEWAIT;
 	}
 	else if(Func_vendor == AskPm_vendor_typedef){
 		AskPm(adr);
+		timeWait = 0;
 	}
 	else if(Func_vendor == ControlCurtain_vendor_typedef){
 		ControlCurtains(adr, buttonID_controlCurtain, modeID_percentOpen);
@@ -1094,18 +1107,22 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
-	vrts_DataUartSend.timeWait = TIMEWAIT;
+	vrts_DataUartSend.timeWait = timeWait;
+	pthread_mutex_trylock(&CMDUART_key);
 	bufferDataUart.push(vrts_DataUartSend);
-//	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
-//	for (int i = 0; i < 4; i++) {
-//		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
-//	}
-//	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
-//	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
-//	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
-//	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
-//		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
-//	}
-//	printf("\n");
+	pthread_mutex_unlock(&CMDUART_key);
+#if !PRINTUART
+	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
+	for (int i = 0; i < 4; i++) {
+		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
+	}
+	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
+	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
+	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
+	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
+		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
+	}
+	printf("\n");
+#endif
 }
 

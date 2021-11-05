@@ -7,6 +7,7 @@
 #include "../logging/slog.h"
 #include "../Include/Include.hpp"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
+#include "../Mqtt/Mqtt.hpp"
 
 #define TIMESCAN 3
 clock_t startP, endP;
@@ -93,7 +94,6 @@ void StopCountCheckTimeout(){
 static uint16_t PRO_getSecondDay(){
 	uint64_t second;
 	struct timeval timeCurrent;
-
 	gettimeofday(&timeCurrent,NULL);
 	second = (timeCurrent.tv_sec);
 	return second;
@@ -101,17 +101,16 @@ static uint16_t PRO_getSecondDay(){
 void* ProvisionThread(void *argv) {
 	tmp = pthread_self();
 	while (MODE_PROVISION) {
-//		cout<<"SUB TIME "<<PRO_getSecondDay() - Timeout_CheckDataBuffer1<<endl;
-		if ((flag_done == true) || ((PRO_getSecondDay() - Timeout_CheckDataBuffer1) >= 3)) {
+		if ((flag_done == true) || ((PRO_getSecondDay() - Timeout_CheckDataBuffer1) >= 15)) {
 			scanNotFoundDev++;
-			cout<< "SCAN"<<scanNotFoundDev << endl;
-			if (scanNotFoundDev == 3) {
+			if (scanNotFoundDev == 2) {
 				scanNotFoundDev = 0;
 				MODE_PROVISION = false;
 				bufferDataUart.push(AssignData(OUTMESSAGE_ScanStop, 3));
 				gvrb_Provision = false;
 				isProvision = false;
 				slog_print(SLOG_INFO, 1, "<provision>Provision stop");
+				mqtt_send(mosq,TP_PUB,"{\"CMD\":\"STOP\"}");
 				flag_done = true;
 				Pro_startCount = false;
 				InitFalg();
@@ -233,10 +232,9 @@ void* ProvisionThread(void *argv) {
 		if (vrb_CheckingClock) {
 			gettimeofday(&vrcl_End, NULL);
 			long seconds = (vrcl_End.tv_sec - vrcl_Start.tv_sec);
-			long micros = ((seconds * 1000000) + vrcl_End.tv_usec)
-					- (vrcl_Start.tv_usec);
-			if (seconds >= 40) {
-				slog_print(SLOG_INFO, 1, "TIMEOUT PROVISION");
+			long micros = ((seconds * 1000000) + vrcl_End.tv_usec) - (vrcl_Start.tv_usec);
+			if (seconds >= 30) {
+				slog_print(SLOG_INFO, 1, "<provision>TIMEOUT PROVISION");
 				vrb_CheckingClock = false;
 				flag_done = false;
 				Pro_startCount = true;

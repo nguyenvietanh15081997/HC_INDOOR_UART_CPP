@@ -98,7 +98,5 @@ int GWIF_ProcessData (void);
  */
 void* GWINF_Thread(void *vargp);
 
-void* GWITF_WriteUart(void *argv);
-
 
 #endif /* GATEWAYMANAGER_GATEINTERFACE_H_ */

@@ -140,7 +140,7 @@ static void Update(char *msg) {
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
 				const Value &deviceUnicast = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < deviceUnicast.Size(); i++) {
 					uint16_t adr = deviceUnicast[i].GetInt();
@@ -159,7 +159,7 @@ static void ResetNode(char *msg) {
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
 				const Value &deviceUnicast = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < deviceUnicast.Size(); i++) {
 					uint16_t adr = deviceUnicast[i].GetInt();
@@ -343,7 +343,7 @@ static void AddGroup(char *msg) {
 			if (data.HasMember("GROUP_UNICAST_ID")) {
 				groupId = data["GROUP_UNICAST_ID"].GetInt();
 			}
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
 				const Value &temp = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < temp.Size(); i++) {
 					adr = temp[i].GetInt();
@@ -370,7 +370,7 @@ static void DelGroup(char *msg) {
 			if (data.HasMember("GROUP_UNICAST_ID")) {
 				groupId = data["GROUP_UNICAST_ID"].GetInt();
 			}
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
 				const Value &temp = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < temp.Size(); i++) {
 					adr = temp[i].GetInt();
@@ -402,7 +402,7 @@ static void AddScene(char *msg) {
 			}
 			if (data.HasMember("CCT")) {
 				const Value &tempCCT = data["CCT"];
-				if (tempCCT.HasMember("DEVICE_UNICAST_ID")) {
+				if (tempCCT.HasMember("DEVICE_UNICAST_ID")  && tempCCT["DEVICE_UNICAST_ID"].IsArray()) {
 					const Value &cctObj = tempCCT["DEVICE_UNICAST_ID"];
 					for (SizeType i = 0; i < cctObj.Size(); i++) {
 						adrCCT = cctObj[i].GetInt();
@@ -458,7 +458,7 @@ static void EditScene(char *msg) {
 			}
 			if(data.HasMember("CCT")){
 				const Value& cct = data["CCT"];
-				if(cct.HasMember("DEVICE_UNICAST_ID")){
+				if(cct.HasMember("DEVICE_UNICAST_ID") && cct["DEVICE_UNICAST_ID"].IsArray()){
 					const Value& arrayAdr = cct["DEVICE_UNICAST_ID"];
 					for (SizeType i = 0; i < arrayAdr.Size(); i++) {
 						adrCCT = arrayAdr[i].GetInt();
@@ -513,7 +513,7 @@ static void DelScene(char *msg) {
 				sceneId = data["SCENEID"].GetInt();
 				gSceneIdDel = sceneId;
 			}
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
 				const Value &arrayCct = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < arrayCct.Size(); i++) {
 					adrCct = arrayCct[i].GetInt();
@@ -522,7 +522,7 @@ static void DelScene(char *msg) {
 							NULL16, NULL16, NULL16, NULL16, 14);
 				}
 			}
-			if (data.HasMember("DEVICE_RGB_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_RGB_UNICAST_ID") && data["DEVICE_RGB_UNICAST_ID"].IsArray()) {
 				const Value &arrayRgbCct = data["DEVICE_RGB_UNICAST_ID"];
 				for (SizeType i = 0; i < arrayRgbCct.Size(); i++) {
 					adrRgb = arrayRgbCct[i].GetInt();
@@ -572,7 +572,7 @@ static void CallModeRgb(char *msg) {
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("SRGBID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("SRGBID") && data["DEVICE_UNICAST_ID"].IsArray()) {
 				srgbId = data["SRGBID"].GetInt();
 				const Value& adrObj = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < adrObj.Size(); i++) {
@@ -1416,18 +1416,60 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"DELHC",						(DelHc)}
 };
 
-void JsonHandle(char *data) {
+#if 0
+static void testProcess(bufferDataMqtt_t data){
+	Document document;
+	document.Parse(data.dataMqtt);
+	uint16_t time = 0;
+	uint16_t adr;
+	uint16_t valueOnOff;
+	if (document.IsObject()) {
+		if (document.HasMember("TIME")) {
+			time = document["TIME"].GetInt();
+		}
+		if (document.HasMember("DATA")) {
+			const Value &data = document["DATA"];
+			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("VALUE_ONOFF")) {
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				valueOnOff = data["VALUE_ONOFF"].GetInt();
+				if (!startProcessRoom) {
+					FunctionPer(HCI_CMD_GATEWAY_CMD, ControlOnOff_typedef, adr,
+							NULL8, valueOnOff, NULL16, NULL16, NULL16,
+							NULL16, NULL16, NULL16, NULL16, GetTransition(time),
+							16);
+				} else {
+					FunctionPer(HCI_CMD_GATEWAY_CMD, ControlOnoff_NoAck_typedef,
+							adr, NULL8, valueOnOff, NULL16, NULL16, NULL16,
+							NULL16, NULL16, NULL16, NULL16, GetTransition(time),
+							16);
+				}
+			}
+		}
+	}
+	Document objDelete;
+	document.Swap(objDelete);
+}
+#endif
+
+void JsonHandle(char * data) {
 	Document document;
 	document.Parse(data);
 	if (document.IsObject()) {
 		if (document.HasMember("CMD")) {
 			string cmd = document["CMD"].GetString();
+#if 1
 			for (int i = 0; i < MAX_FUNCTION; i++) {
 				if (cmd.compare(listCommandMQTT[i].commandStr) == 0) {
 					listCommandMQTT[i].funcProcess(data);
 					break;
 				}
 			}
+#endif
+#if 0
+			if(cmd.compare("ONOFF") == 0){
+				testProcess(data);
+			}
+#endif
 		}
 	}
 	Document objDelete;

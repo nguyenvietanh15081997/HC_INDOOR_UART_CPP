@@ -115,13 +115,26 @@ static uint16_t getSecondDay(){
 
 static uint64_t t1, t2;
 void GWIF_WriteMessage(void) {
+	pthread_mutex_trylock(&vrpth_SHAREMESS_Send2GatewayLock);
 	if (bufferDataUart.size() != 0) {
 		uartSendDev_t data = bufferDataUart.front();
 		t1 = getMillisOfDay();
 		if ((t1 - t2) >= data.timeWait) {
 			write(serial_port, ToChar(data.dataUart), data.length);
 			tcdrain(serial_port);
-			slog_trace("SEND UART");
+#if PRINTUART
+			printf("\tCmd: ");
+			printf("%2x %2x",data.dataUart.HCI_CMD_GATEWAY[0],data.dataUart.HCI_CMD_GATEWAY[1]);
+			for(int i=0;i<4;i++){
+				printf("%2x ",data.dataUart.opCode00[i]);
+			}
+			printf("%2x %2x %2x %2x ",data.dataUart.retry_cnt,data.dataUart.rsp_max,data.dataUart.adr_dst[0],data.dataUart.adr_dst[1]);
+			printf("%2x %2x ",data.dataUart.opCode[0],data.dataUart.opCode[1]);
+			for(int j = 0;j<(data.length - 12);j++){
+				printf("%2x ",data.dataUart.para[j]);
+			}
+			printf("\n");
+#endif
 			bufferDataUart.pop();
 			t2 = t1;
 		}
@@ -130,6 +143,7 @@ void GWIF_WriteMessage(void) {
 		queue<uartSendDev_t> 	bufferDataUartEmpty;
 		swap(bufferDataUart,bufferDataUartEmpty);
 	}
+	pthread_mutex_unlock(&vrpth_SHAREMESS_Send2GatewayLock);
 }
 
 static uint8_t read_buf[256];
@@ -142,7 +156,6 @@ void GWIF_Read2Buffer (void){
 		if(Pro_startCount){
 			Pro_startCount = false;
 			Timeout_CheckDataBuffer1 = getSecondDay();
-			printf("Time1: %ld\n",Timeout_CheckDataBuffer1);
 		}
 		num_bytes = read(serial_port, &read_buf,128);
 		num_count2Push = 0;
@@ -312,15 +325,14 @@ int GWIF_ProcessData (void)
 {
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
-
-//		printf("\tLength: %d\n",vrui_GWIF_LengthMeassge);
-//		printf("\tTscript: 0x%2x\n", vrts_GWIF_IncomeMessage->Opcode);
-//		printf("\tMessage:");
-//		for (int i = 0; i < vrui_GWIF_LengthMeassge; i++) {
-//			printf("%2x-",vrts_GWIF_IncomeMessage->Message[i]);
-//		}
-//		printf("\n");
-//		printf("\n");
+#if PRINTUART
+		printf("\tRsp: Length: %d ,Message: ",vrui_GWIF_LengthMeassge);
+		printf("%2x ", vrts_GWIF_IncomeMessage->Opcode);
+		for (int i = 0; i < vrui_GWIF_LengthMeassge; i++) {
+			printf("%2x ",vrts_GWIF_IncomeMessage->Message[i]);
+		}
+		printf("\n");
+#endif
 
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC)) {
@@ -450,7 +462,7 @@ int GWIF_ProcessData (void)
 					StopCountCheckTimeout();
 				}
 				if(vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_KEY_BIND_EVT && vrts_GWIF_IncomeMessage->Message[1] == HCI_GATEWAY_CMD_BIND_SUSCESS){
-					slog_info("<provision> success");
+					slog_info("<provision> SUCCESS");
 					StopCountCheckTimeout();
 				}
 				if(vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_KEY_BIND_RSP){
@@ -518,23 +530,14 @@ int GWIF_ProcessData (void)
 	return 1;
 }
 
-void *GWINF_Thread(void *vargp)
-{
+void* GWINF_Thread(void *vargp) {
 	GWIF_Init();
-	while(1){
-//		GWIF_WriteMessage();
+	while (1) {
+		GWIF_WriteMessage();
 		GWIF_Read2Buffer();
 		GWIF_CheckData();
 		GWIF_ProcessData();
 		usleep(20000);
 	}
-    return NULL;
-}
-
-void * GWITF_WriteUart( void *argv){
-//	cout<<"Thread write uart"<<endl;
-	while(1){
-		GWIF_WriteMessage();
-		usleep(40000);
-	}
+	return NULL;
 }
