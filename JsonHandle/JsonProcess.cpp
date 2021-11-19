@@ -105,7 +105,7 @@ static void Stop(char *msg) {
 		slog_print(SLOG_INFO, 1, "<provision>Provision stop");
 		MODE_PROVISION=false;
 //		ControlMessage(3, OUTMESSAGE_ScanStop);
-		bufferDataUart.push(AssignData(OUTMESSAGE_ScanStop,3));
+		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
 		//pthread_cancel(tmp);
 		flag_selectmac     = false;
 		flag_getpro_info   = false;
@@ -387,7 +387,6 @@ static void DelGroup(char *msg) {
 }
 
 static void AddScene(char *msg) {
-	gvrb_AddSceneLight = true;
 	Document document;
 	document.Parse(msg);
 	uint16_t sceneId;
@@ -409,7 +408,7 @@ static void AddScene(char *msg) {
 						FunctionPer(HCI_CMD_GATEWAY_CMD, AddSence_typedef,
 								adrCCT,
 								NULL8, NULL8, NULL16, NULL16, sceneId, NULL16,
-								NULL16, NULL16, NULL16, NULL16, 14);
+								NULL16, NULL16, NULL16, NULL16, 15);
 					}
 				}
 			}
@@ -421,12 +420,9 @@ static void AddScene(char *msg) {
 							&& lightRGB_CCT.HasMember("SRGBID")) {
 						adrRGB_CCT = lightRGB_CCT["DEVICE_UNICAST_ID"].GetInt();
 						srgbId = lightRGB_CCT["SRGBID"].GetInt();
-						Function_Vendor(HCI_CMD_GATEWAY_CMD,
-								SceneForRGB_vendor_typedef, adrRGB_CCT, NULL16,
-								NULL8, NULL8, NULL8,
-								NULL16, NULL16, NULL16, NULL16, NULL16, NULL16,
-								sceneId, srgbId, NULL8, NULL8, NULL8, NULL16,
-								23);
+						FunctionPer(HCI_CMD_GATEWAY_CMD,SceneForRGB_vendor_typedef,
+								adrRGB_CCT,NULL16,srgbId,NULL16,NULL16,sceneId,NULL16,
+								NULL16, NULL16, NULL16,NULL16,15);
 					}
 				}
 			}
@@ -464,7 +460,7 @@ static void EditScene(char *msg) {
 						adrCCT = arrayAdr[i].GetInt();
 						FunctionPer(HCI_CMD_GATEWAY_CMD, AddSence_typedef,
 								adrCCT, NULL8, NULL8, NULL16, NULL16, sceneId,
-								NULL16, NULL16, NULL16, NULL16, NULL16, 14);
+								NULL16, NULL16, NULL16, NULL16, NULL16, 15);
 					}
 				}
 			}
@@ -472,11 +468,9 @@ static void EditScene(char *msg) {
 				const Value& arrayRgbCct = data["RGB_DELSCENE"];
 				for (SizeType i = 0; i < arrayRgbCct.Size(); i++) {
 					adrRGB_CCT = arrayRgbCct[i].GetInt();
-					Function_Vendor(HCI_CMD_GATEWAY_CMD,
-							DelSceneRgb_vendor_typedef, adrRGB_CCT, NULL16,
-							NULL8, NULL8, NULL8, NULL16,
-							NULL16, NULL16, NULL16, NULL16, NULL16, sceneId,
-							NULL8, NULL8, NULL8, NULL8, NULL16, 23);
+					FunctionPer(HCI_CMD_GATEWAY_CMD, DelSceneRgb_vendor_typedef, adrRGB_CCT,
+						NULL8, NULL8, NULL16, NULL16, sceneId, NULL16, NULL16,
+								NULL16, NULL16, NULL16, 14);
 				}
 			}
 			if(data.HasMember("RGB_CCT")){
@@ -486,12 +480,9 @@ static void EditScene(char *msg) {
 					if (rgbCct.HasMember("DEVICE_UNICAST_ID") && rgbCct.HasMember("SRGBID")) {
 						adrRGB_CCT = rgbCct["DEVICE_UNICAST_ID"].GetInt();
 						sRgbId = rgbCct["SRGBID"].GetInt();
-						Function_Vendor(HCI_CMD_GATEWAY_CMD,
-								SceneForRGB_vendor_typedef, adrRGB_CCT, NULL16,
-								NULL8, NULL8, NULL8,
-								NULL16, NULL16, NULL16, NULL16, NULL16, NULL16,
-								sceneId, sRgbId, NULL8, NULL8, NULL8, NULL16,
-								23);
+						FunctionPer(HCI_CMD_GATEWAY_CMD,SceneForRGB_vendor_typedef,
+								adrRGB_CCT,NULL16,sRgbId,NULL16,NULL16,sceneId,NULL16,
+								NULL16, NULL16, NULL16,NULL16,15);
 					}
 				}
 			}
@@ -500,7 +491,6 @@ static void EditScene(char *msg) {
 }
 
 static void DelScene(char *msg) {
-	gvrb_AddSceneLight = false;
 	Document document;
 	document.Parse(msg);
 	uint16_t sceneId;
@@ -526,11 +516,9 @@ static void DelScene(char *msg) {
 				const Value &arrayRgbCct = data["DEVICE_RGB_UNICAST_ID"];
 				for (SizeType i = 0; i < arrayRgbCct.Size(); i++) {
 					adrRgb = arrayRgbCct[i].GetInt();
-					Function_Vendor(HCI_CMD_GATEWAY_CMD,
-							DelSceneRgb_vendor_typedef, adrRgb, NULL16, NULL8,
-							NULL8, NULL8, NULL16,
-							NULL16, NULL16, NULL16, NULL16, NULL16, sceneId,
-							NULL8, NULL8, NULL8, NULL8, NULL16, 23);
+					FunctionPer(HCI_CMD_GATEWAY_CMD, DelSceneRgb_vendor_typedef, adrRgb,
+							NULL8, NULL8, NULL16, NULL16, sceneId, NULL16,
+							NULL16, NULL16, NULL16, NULL16, 14);
 				}
 			}
 		}
@@ -550,15 +538,10 @@ static void CallScene(char *msg) {
 			const Value &data = document["DATA"];
 			if(data.HasMember("SCENEID")){
 				sceneId = data["SCENEID"].GetInt();
-				FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, NULL8,
+				FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
 						NULL8, NULL8, NULL16, NULL16, sceneId,
 						NULL16, NULL16, NULL16, NULL16,
 						GetTransition(transition), 17);
-				Function_Vendor(HCI_CMD_GATEWAY_CMD,
-						CallSceneRgb_vendor_typedef, NULL16, NULL16, NULL8,
-						NULL8, NULL8, NULL16,
-						NULL16, NULL16, NULL16, NULL16, NULL16, sceneId, NULL8,
-						NULL8, NULL8, NULL8, NULL16, 23);
 			}
 		}
 	}
@@ -577,10 +560,9 @@ static void CallModeRgb(char *msg) {
 				const Value& adrObj = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < adrObj.Size(); i++) {
 					adr = adrObj[i].GetInt();
-					Function_Vendor(HCI_CMD_GATEWAY_CMD, CallModeRgb_vendor_typedef,
-							adr, NULL16, NULL8, NULL8, NULL8, NULL16,
-							NULL16, NULL16, NULL16, NULL16, NULL16, NULL16, srgbId,
-							NULL8, NULL8, NULL8, NULL16, 23);
+					FunctionPer(HCI_CMD_GATEWAY_CMD, CallModeRgb_vendor_typedef,
+							adr, NULL16, srgbId, NULL16, NULL16, NULL16, NULL16,
+							NULL16, NULL16, NULL16, NULL16, 17);
 				}
 			}
 		}
@@ -979,6 +961,8 @@ static void AddSceneLightPirSensor(char *msg){
 	uint8_t statusPir;
 	uint8_t type;
 	uint16_t condition;
+	uint8_t condition_light = 0;
+	uint8_t conditionSensor = 0;
 	uint16_t highLux;
 	uint16_t lowLux;
 	if(document.IsObject()){
@@ -995,29 +979,37 @@ static void AddSceneLightPirSensor(char *msg){
 					statusPir = pirSensor["PIR"].GetInt();
 				}
 				if(type == 1){
-					/*Call function*/
+					highLux = lowLux = 0;
 				}
-				if(type == 2){
+				else if(type == 2){
 					if(data.HasMember("LIGHT_SENSOR")){
 						const Value& lighSensor = data["LIGHT_SENSOR"];
 						if(lighSensor.HasMember("CONDITION") && lighSensor.HasMember("LOW_LUX")){
 							condition = lighSensor["CONDITION"].GetInt();
 							lowLux = lighSensor["LOW_LUX"].GetInt();
 							if(condition == 1) {
-								/*call function*/
+
 							}
 							else if ((condition == 3) || (condition == 4)) {
-								/*Call funtion*/
+								condition_light = 0x01;
 							}
 							else if ((condition == 5) || (condition == 6)) {
-								/*call function*/
+								condition_light = 0x03;
 							}
 							else if ((condition == 7)) {
-								/*call function*/
+								highLux = lighSensor["HIGHT_LUX"].GetInt();
+								condition_light = 0x02;
 							}
 						}
 					}
 				}
+				conditionSensor = (uint8_t)((statusPir << 3) |(condition_light));
+				Function_Vendor(HCI_CMD_GATEWAY_CMD,
+						SceneForSensor_LightPir_vendor_typedef, adr, NULL16,
+						NULL8, NULL8,
+						NULL8, conditionSensor, lowLux / 10, highLux / 10,
+						NULL8, NULL8, sceneId, NULL16,
+						NULL8, NULL8, NULL8, NULL8, NULL16, 23);
 			}
 		}
 	}

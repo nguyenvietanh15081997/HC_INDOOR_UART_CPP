@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <queue>
+#include <deque>
 #include <string>
 #include <stdbool.h>
 #include <stdio.h>
@@ -24,12 +25,7 @@ extern bool 				gvrb_AddSceneLight;
 extern bool 				gvrb_AddGroupLight;
 extern bool					gvrb_Provision;
 extern uint16_t 			gSceneIdDel;
-extern string 				gMacDev;
-extern string 				gUUID;
-extern string 				gDeviceKey;
-extern string 				gNetKey;
-extern string 				gAppKey;
-extern string 				gFirmwareVer;
+
 extern int ptempIndoor;
 extern uint16_t phumIndoor;
 extern uint16_t ppm25;
@@ -77,12 +73,12 @@ typedef struct uartSendDev_Vendor{
 	long 				timeWait;
 }uartSendDev_Vendor_t;
 
-#define MAX_MSG_MQTT 		2048
+#define MAX_MSG_MQTT 		512
 typedef struct bufferDataMqtt{
 	char dataMqtt[MAX_MSG_MQTT];
 }bufferDataMqtt_t;
 
-extern queue<uartSendDev_t> bufferDataUart;
+extern deque<uartSendDev_t> bufferDataUart;
 
 uartSendDev_t AssignData(uint8_t *data,int length);
 

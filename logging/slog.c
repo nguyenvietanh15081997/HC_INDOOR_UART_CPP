@@ -300,9 +300,9 @@ void slog_init(const char* pName, uint16_t nFlags, uint8_t nTdSafe)
     pConfig->eColorFormat = SLOG_COLOR_FULL;
     pConfig->sFileName[0] = 0;
     pConfig->sFilePath[0] = 0;
-    pConfig->nTraceTid = 1;
+    pConfig->nTraceTid = 0;
     pConfig->nToScreen = TOSCREEN;
-    pConfig->nToFile = 0/*TOFILE*/;
+    pConfig->nToFile = TOFILE;
     pConfig->nFlush = 0;
     pConfig->nFlags = nFlags;
 

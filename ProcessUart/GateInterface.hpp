@@ -11,12 +11,11 @@
 #ifndef GATEINTERFACE_HPP_
 #define GATEINTERFACE_HPP_
 
-#include "../Include/Include.hpp"
 #include "RingBuffer.h"
 #include "ShareMessage.h"
 #include "OpCode.h"
 
-#define RINGBUFFER_LEN 		(2048)
+#define RINGBUFFER_LEN 		(4096)
 
 #define UART_INTERFACE		(1)
 #define UART_BAUDRATE		(115200)
@@ -26,21 +25,6 @@
 #define MESSAGE_MAXLENGTH	(61)
 #define MESSAGE_HEADLENGTH	(3)
 
-#define MESSAGE_OPCODE_01	(0x80)
-#define MESSAGE_OPCODE_02	(0x90)
-#define MESSAGE_OPCODE_03	(0x91)
-#define MESSAGE_OPCODE_04	(0xFA)
-#define MESSAGE_OPCODE_05	(0x92)
-
-/*flag of provision*/
-//extern bool flag_selectmac;
-//extern bool flag_getpro_info;
-//extern bool flag_getpro_element;
-//extern bool flag_provision;
-//extern bool flag_mac;
-//extern bool flag_check_select_mac;
-//extern bool flag_done;
-//extern uint8_t deviceKey_json[50];
 
 /*
  * Initiate uart, buffer save data

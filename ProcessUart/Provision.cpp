@@ -63,7 +63,7 @@ uint8_t PRO_mac[24] = {0};
 
 void InitFalg(){
 //	ControlMessage(3,OUTMESSAGE_ScanStop);
-	usleep(100000);
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop, 3));
 	flag_selectmac     = false;
 	flag_getpro_info   = false;
 	flag_getpro_element= false;
@@ -106,7 +106,7 @@ void* ProvisionThread(void *argv) {
 			if (scanNotFoundDev == 2) {
 				scanNotFoundDev = 0;
 				MODE_PROVISION = false;
-				bufferDataUart.push(AssignData(OUTMESSAGE_ScanStop, 3));
+				bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop, 3));
 				gvrb_Provision = false;
 				isProvision = false;
 				slog_print(SLOG_INFO, 1, "<provision>Provision stop");
@@ -119,8 +119,9 @@ void* ProvisionThread(void *argv) {
 				Pro_startCount = true;
 				InitFalg();
 				isProvision = true;
-				bufferDataUart.push(AssignData(OUTMESSAGE_ScanStart, 3));
+				bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStart, 3));
 				slog_print(SLOG_INFO, 1, "<provision>SCAN");
+				Timeout_CheckDataBuffer1 = PRO_getSecondDay();
 				gvrb_Provision = true;
 				flag_check_select_mac = true;
 				InitTimeoutRspProvision();
@@ -130,12 +131,11 @@ void* ProvisionThread(void *argv) {
 			flag_selectmac = false;
 			flag_mac = false;
 			hasSelectMac = false;
-			bufferDataUart.push(AssignData(OUTMESSAGE_MACSelect, 9));
+			bufferDataUart.push_back(AssignData(OUTMESSAGE_MACSelect, 9));
 			slog_print(SLOG_INFO, 1, "<provision>SELECTMAC");
-			usleep(400000);
-			bufferDataUart.push(AssignData(OUTMESSAGE_GetPro, 3));
+			sleep(1);
+			bufferDataUart.push_back(AssignData(OUTMESSAGE_GetPro, 3));
 			slog_print(SLOG_INFO, 1, "<provision>GETPRO");
-//			usleep(100000);
 			flag_checkadmitpro = false;
 			InitTimeoutRspProvision();
 		}
@@ -151,9 +151,20 @@ void* ProvisionThread(void *argv) {
 				admit_pro_internal[i + 5] = random2;
 			}
 			slog_print(SLOG_INFO, 1, "<provision>SETPRO....");
-			bufferDataUart.push(AssignData(setpro_internal, 28));
+			bufferDataUart.push_back(AssignData(setpro_internal, 28));
+			usleep(400000);
 			slog_print(SLOG_INFO, 1, "<provision>ADMITPRO...");
-			bufferDataUart.push(AssignData(admit_pro_internal, 21));
+			bufferDataUart.push_back(AssignData(admit_pro_internal, 21));
+			sprintf((char*) PRO_deviceKey,
+					"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+					admit_pro_internal[5], admit_pro_internal[6],
+					admit_pro_internal[7], admit_pro_internal[8],
+					admit_pro_internal[9], admit_pro_internal[10],
+					admit_pro_internal[11], admit_pro_internal[12],
+					admit_pro_internal[13], admit_pro_internal[14],
+					admit_pro_internal[15], admit_pro_internal[16],
+					admit_pro_internal[17], admit_pro_internal[18],
+					admit_pro_internal[19], admit_pro_internal[20]);
 			flag_checkadmitpro = true;
 			InitTimeoutRspProvision();
 		}
@@ -161,22 +172,19 @@ void* ProvisionThread(void *argv) {
 			flag_admitpro = false;
 			flag_checkadmitpro = false;
 			slog_print(SLOG_INFO, 1, "<provision>GETPRO");
-			//			ControlMessage(3, OUTMESSAGE_GetPro);
-			bufferDataUart.push(AssignData(OUTMESSAGE_GetPro, 3));
+			bufferDataUart.push_back(AssignData(OUTMESSAGE_GetPro, 3));
 			InitTimeoutRspProvision();
 		}
-		if ((flag_getpro_info == true) && (flag_getpro_element == true)) {
+		if ((flag_getpro_info == true) /*&& (flag_getpro_element == true)*/) {
 			flag_getpro_info = false;
 			flag_getpro_element = false;
-			//			ControlMessage(28, OUTMESSAGE_Provision);
-			bufferDataUart.push(AssignData(OUTMESSAGE_Provision, 28));
+			bufferDataUart.push_back(AssignData(OUTMESSAGE_Provision, 28));
 			slog_print(SLOG_INFO, 1, "<provision>PROVISION");
 			InitTimeoutRspProvision();
 		}
 		if (flag_provision == true) {
 			flag_provision = false;
-			//			ControlMessage(22, OUTMESSAGE_BindingALl);
-			bufferDataUart.push(AssignData(OUTMESSAGE_BindingALl, 22));
+			bufferDataUart.push_back(AssignData(OUTMESSAGE_BindingALl, 22));
 			slog_print(SLOG_INFO, 1, "<provision>BINDING ALL");
 			flag_set_type = false;
 			InitTimeoutRspProvision();
@@ -233,13 +241,13 @@ void* ProvisionThread(void *argv) {
 			gettimeofday(&vrcl_End, NULL);
 			long seconds = (vrcl_End.tv_sec - vrcl_Start.tv_sec);
 			long micros = ((seconds * 1000000) + vrcl_End.tv_usec) - (vrcl_Start.tv_usec);
-			if (seconds >= 30) {
+			if (seconds >= 40) {
 				slog_print(SLOG_INFO, 1, "<provision>TIMEOUT PROVISION");
 				vrb_CheckingClock = false;
 				flag_done = false;
 				Pro_startCount = true;
 				InitFalg();
-				bufferDataUart.push(AssignData(OUTMESSAGE_ScanStart, 3));
+				bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStart, 3));
 				gvrb_Provision = true;
 				slog_print(SLOG_INFO, 1, "<provision>SCAN");
 				flag_check_select_mac = true;

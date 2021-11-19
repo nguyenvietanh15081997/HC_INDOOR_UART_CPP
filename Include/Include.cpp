@@ -8,18 +8,12 @@
 #include "Include.hpp"
 
 using namespace std;
-queue<uartSendDev_t> 	bufferDataUart;
+deque<uartSendDev_t> 	bufferDataUart;
 cmdcontrol_t 			vrts_CMD_STRUCTURE;
 bool 					gvrb_AddSceneLight;
 bool 					gvrb_AddGroupLight;
 bool					gvrb_Provision;
 uint16_t 				gSceneIdDel;
-string 					gMacDev;
-string 					gUUID;
-string 					gDeviceKey;
-string 					gNetKey;
-string 					gAppKey;
-string 					gFirmwareVer = "1.0";
 
 int ptempIndoor;
 uint16_t phumIndoor;

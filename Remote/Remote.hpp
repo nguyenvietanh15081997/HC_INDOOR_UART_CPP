@@ -45,4 +45,12 @@ void RspRemoteDelScene(TS_GWIF_IncomingData *data);
 
 void RspPowerRemoteStatus(TS_GWIF_IncomingData *data);
 
+void RspStatusSwitch4 (TS_GWIF_IncomingData *data);
+
+void RspControlSwitch4(TS_GWIF_IncomingData *data);
+
+void RspAddSceneSwitch4(TS_GWIF_IncomingData * data);
+
+void RspDelSceneSwitch4(TS_GWIF_IncomingData *data);
+
 #endif /* REMOTE_REMOTE_H_ */

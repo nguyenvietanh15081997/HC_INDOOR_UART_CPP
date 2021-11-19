@@ -55,10 +55,7 @@ extern uint8_t PRO_uuid[37];
 extern uint8_t PRO_mac[24];
 
 void StopCountCheckTimeout();
-//
-///*
-// * Init clock count timeout provision
-// */
+
 void InitTimeoutRspProvision();
 
 void *ProvisionThread (void *argv);

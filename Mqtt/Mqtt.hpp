@@ -7,13 +7,11 @@
 #define mqtt_host 			"10.10.10.1"
 #define mqtt_port 			1883
 #define mqtt_username 		"RD"
-#define mqtt_password 		"1"
 
 #define TP_PUB           	"RD_STATUS"
 #define TP_SUB				"RD_CONTROL"
 
 extern struct mosquitto *mosq;
-extern bool hasRsp;
 
 /*
  * Transmit mqtt

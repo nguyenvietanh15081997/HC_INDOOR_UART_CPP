@@ -12,6 +12,7 @@
 #include "logging/slog.h"
 #include "sqlite3.h"
 
+
 using namespace std;
 
 pthread_t vrpth_MqttThread;
@@ -56,16 +57,18 @@ int OpenDB(char *sqlQuery, bool getString){
 }
 
 void GetDevicekey(){
-	char *getDevKey = "SELECT DeviceKey FROM Device";
+	char *getDevKey = "SELECT DeviceKey FROM Device;";
 	OpenDB(getDevKey,true);
 }
 
+
 int main() {
-	cout << "START" << endl;
 	slog_init("logfile", SLOG_FLAGS_ALL, 1);
 	slog_config_get(&slgCfg);
 	slog_config_set(&slgCfg);
-//	GetDevicekey();
+
+	GetDevicekey();
+	slog_print(SLOG_INFO,1,"device key: %s",PRO_deviceKey);
 	pthread_create(&vrpth_MqttThread, NULL, MQTT_Thread, NULL);
 	pthread_create(&vrpth_UartReadThread, NULL, GWINF_Thread, NULL);
 

@@ -9,8 +9,9 @@
 
 pthread_mutex_t CMDUART_key = PTHREAD_MUTEX_INITIALIZER;
 
-#define TIMEWAIT			400
-char *pHeaderCmd= "cmd";
+#define TIMEWAIT			500
+#define TIMECONFIGROOM  	600
+#define TIMEWAIT_REMOTE		600
 
 uint8_t parRetry_cnt = 0x02;
 uint8_t parRsp_Max = 0x00;
@@ -92,25 +93,25 @@ static void CmdDelGroup(uint16_t uniAdrAddGroup, uint8_t adrGroup) {
 	vrts_CMD_STRUCTURE.para[5] = 0x10;
 }
 
-static void CmdAddSence(uint16_t uniAdrSence, uint16_t senceID) {
+static void CmdAddSence(uint16_t uniAdrSence, uint16_t senceID, uint8_t sRgbid) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrSence & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (uniAdrSence >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = SCENE_STORE & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (SCENE_STORE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[0] = senceID & 0xFF;
 	vrts_CMD_STRUCTURE.para[1] = (senceID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = vrts_CMD_STRUCTURE.para[3] =
-			vrts_CMD_STRUCTURE.para[4] = 0;
+	vrts_CMD_STRUCTURE.para[2] = sRgbid;
+	vrts_CMD_STRUCTURE.para[3] = vrts_CMD_STRUCTURE.para[4] = 0;
 }
 
-static void CmdCallSence(uint16_t senceId, uint16_t transition) {
-	vrts_CMD_STRUCTURE.adr_dst[0] = 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = 0xFF;
+static void CmdCallSence(uint16_t adr,uint16_t senceId, uint8_t sRgbId, uint16_t transition) {
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = SCENE_RECALL & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (SCENE_RECALL >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[0] = senceId & 0xFF;
 	vrts_CMD_STRUCTURE.para[1] = (senceId >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = 0x00;
+	vrts_CMD_STRUCTURE.para[2] = sRgbId;
 	vrts_CMD_STRUCTURE.para[3] = transition & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (transition >> 8) & 0xFF;
 }
@@ -165,9 +166,9 @@ static void CmdHSL_Set(uint16_t uniAdrHSL, uint16_t h, uint16_t s, uint16_t l,
 	vrts_CMD_STRUCTURE.para[8] = (transition >> 8) & 0xFF;
 }
 
-static void CmdUpdateLight() {
-	vrts_CMD_STRUCTURE.adr_dst[0] = 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = 0xFF;
+static void CmdUpdateLight(uint16_t adr) {
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >>8 ) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = LIGHTOPCODE_UPDATE & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (LIGHTOPCODE_UPDATE >> 8) & 0xFF;
 }
@@ -259,6 +260,7 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	vrts_CMD_STRUCTURE.opCode00[3] = 0;
 	vrts_CMD_STRUCTURE.retry_cnt = parRetry_cnt;
 	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
+	uint64_t timeWait = TIMEWAIT;
 	if(Func == ResetNode_typedef){
 		CmdResetNode(unicastAdr);
 	}
@@ -266,9 +268,12 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		CmdLightness_Get(unicastAdr);
 	}
 	else if(Func == AddGroup_typedef){
+		gvrb_AddGroupLight = true;
 		CmdAddGroup(unicastAdr, adrGroup);
+		timeWait = TIMECONFIGROOM;
 	}
 	else if(Func == DelGroup_typedef){
+		gvrb_AddGroupLight = false;
 		CmdDelGroup(unicastAdr, adrGroup);
 	}
 	else if(Func == ControlOnOff_typedef){
@@ -294,16 +299,19 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		CmdLightness_Set_NoAck(unicastAdr, parLightness,transition_par_t);
 	}
 	else if (Func == UpdateLight_typedef){
-		CmdUpdateLight();
+		CmdUpdateLight(unicastAdr);
 	}
 	else if(Func == AddSence_typedef){
-		CmdAddSence(unicastAdr, parSenceId);
+		gSceneIdDel = parSenceId;
+		CmdAddSence(unicastAdr, parSenceId,0);
+		timeWait = TIMECONFIGROOM;
 	}
 	else if(Func == DelSence_typedef){
+		gSceneIdDel = parSenceId;
 		CmdDelSence(unicastAdr, parSenceId);
 	}
 	else if(Func == CallSence_typedef){
-		CmdCallSence(parSenceId,transition_par_t);
+		CmdCallSence(unicastAdr,parSenceId,0,transition_par_t);
 	}
 	else if(Func == HSL_Set_typedef){
 		CmdHSL_Set(unicastAdr, parH, parS, parL,transition_par_t);
@@ -317,13 +325,29 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	else if(Func == HSL_Set_NoAck_typedef){
 		CmdHSL_Set_NoAck(unicastAdr, parH, parS, parL,transition_par_t);
 	}
+	else if(Func == SceneForRGB_vendor_typedef){
+		gSceneIdDel = parSenceId;
+		CmdAddSence(unicastAdr,parSenceId,parStatusOnOff);
+	}
+	else if(Func == CallSceneRgb_vendor_typedef){
+		CmdCallSence(unicastAdr,parSenceId, 0, transition_par_t);
+	}
+	else if(Func == CallModeRgb_vendor_typedef){
+		CmdCallSence(unicastAdr,0, parStatusOnOff, transition_par_t);
+	}
+	else if(Func == DelSceneRgb_vendor_typedef){
+		gSceneIdDel = parSenceId;
+		CmdDelSence(unicastAdr,parSenceId);
+	}
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
-	vrts_DataUartSend.timeWait = TIMEWAIT;
+	vrts_DataUartSend.timeWait = timeWait;
 	pthread_mutex_trylock(&CMDUART_key);
-	bufferDataUart.push(vrts_DataUartSend);
+	bufferDataUart.push_back(vrts_DataUartSend);
+//	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&CMDUART_key);
+
 #if !PRINTUART
 	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
 	for (int i = 0; i < 4; i++) {
@@ -573,6 +597,20 @@ static void DelSceneForSensor_Pir(uint16_t adrPir, uint16_t sceneID) {
 	vrts_CMD_STRUCTURE.para[6] = (sceneID >> 8) & 0xFF;
 }
 
+static void SetActionTime_PIRSensor(uint16_t adrPir,uint16_t time){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adrPir & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adrPir>>8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID>>8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE>>8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = (HEADER_SCENE_PIR_SENSOR_TIMEACTION) & 0xFF;
+	vrts_CMD_STRUCTURE.para[4] = (HEADER_SCENE_PIR_SENSOR_TIMEACTION>>8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[5] = time & 0xFF;
+	vrts_CMD_STRUCTURE.para[6] =(time>>8) & 0xFF;
+}
+
 static void SetSceneForDoorSensor(uint16_t adrDoorSensor, uint16_t sceneID,
 		uint8_t statusDoor, uint8_t srgbID) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = adrDoorSensor & 0xFF;
@@ -749,79 +787,6 @@ static void SendTimeForScreenT(uint16_t adrScreenT, uint8_t hours,
 	vrts_CMD_STRUCTURE.para[6] = minute & 0xFF;
 }
 
-static void SetSceneForRGB(uint16_t pAdrRgb, uint16_t pAppID, uint8_t pSrgbID) {
-	vrts_CMD_STRUCTURE.adr_dst[0] = pAdrRgb & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (pAdrRgb >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND;
-	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[3] = (HEADER_SCENE_SET) & 0xFF;
-	vrts_CMD_STRUCTURE.para[4] = (HEADER_SCENE_SET >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[5] = pAppID & 0xFF;
-	vrts_CMD_STRUCTURE.para[6] = (pAppID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[7] = pSrgbID & 0xFF;
-	vrts_CMD_STRUCTURE.para[8] = 0;
-	vrts_CMD_STRUCTURE.para[9] = 0;
-	vrts_CMD_STRUCTURE.para[10] = 0x00;
-}
-
-static void CallSceneRgb(uint16_t appID) {
-	vrts_CMD_STRUCTURE.adr_dst[0] = 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND;
-	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[3] = (HEADER_SCENE_CALL_SCENE_RGB) & 0xFF;
-	vrts_CMD_STRUCTURE.para[4] = (HEADER_SCENE_CALL_SCENE_RGB >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[5] = appID & 0xFF;
-	vrts_CMD_STRUCTURE.para[6] = (appID >> 8) & 0xFF;
-	int i;
-	for (i = 0; i < 4; i++) {
-		vrts_CMD_STRUCTURE.para[i + 7] = 0x00;
-	}
-}
-
-static void CallModeRgb(uint16_t adrCallModeRgb, uint8_t SrgbID) {
-	vrts_CMD_STRUCTURE.adr_dst[0] = adrCallModeRgb & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (adrCallModeRgb >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND;
-	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[3] = (HEADER_SCENE_CALL_MODE) & 0xFF;
-	vrts_CMD_STRUCTURE.para[4] = (HEADER_SCENE_CALL_MODE >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[5] = 0;
-	vrts_CMD_STRUCTURE.para[6] = 0x00;
-	vrts_CMD_STRUCTURE.para[7] = SrgbID;
-	int i;
-	for (i = 0; i < 3; i++) {
-		vrts_CMD_STRUCTURE.para[i + 8] = 0x00;
-	}
-}
-
-static void DelSceneRgb(uint16_t adrDelSceneRgb, uint16_t appID) {
-	vrts_CMD_STRUCTURE.adr_dst[0] = adrDelSceneRgb & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (adrDelSceneRgb >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND;
-	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[3] = (HEADER_SCENE_DEL) & 0xFF;
-	vrts_CMD_STRUCTURE.para[4] = (HEADER_SCENE_DEL >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[5] = appID & 0xFF;
-	vrts_CMD_STRUCTURE.para[6] = (appID >> 8) & 0xFF;
-	int i;
-	for (i = 0; i < 4; i++) {
-		vrts_CMD_STRUCTURE.para[i + 7] = 0x00;
-	}
-}
-
 static void AskTypeDevice(uint16_t adr) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
@@ -979,22 +944,22 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_CMD_STRUCTURE.opCode00[2]= vrts_CMD_STRUCTURE.opCode00[3]=0;
 	vrts_CMD_STRUCTURE.retry_cnt = parRetry_cnt;
 	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
-	uint16_t timeWait = 0;
+	uint16_t timeWait = TIMEWAIT;
 	if(Func_vendor == SceneForRemote_DC_vendor_typedef){
 		SetSceneForRemote_DC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID);
-		timeWait = TIMEWAIT;
+		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == DelSceneForRemote_DC_vendor_typedef){
 		DelSceneForRemote_DC(adr, buttonID_controlCurtain, modeID_percentOpen);
-		timeWait = TIMEWAIT;
+		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == SceneForRemote_AC_vendor_typedef){
 		SetSceneForRemote_AC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID);
-		timeWait = TIMEWAIT;
+		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == DelSceneForRemote_AC_vendor_typedef){
 		DelSceneForRemote_AC(adr, buttonID_controlCurtain, modeID_percentOpen);
-		timeWait = TIMEWAIT;
+		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == SceneForSensor_LightPir_vendor_typedef){
 		RD_Sensor_data_tdef dataScene_Pir_Light_cmd1;
@@ -1033,6 +998,7 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	}
 	else if(Func_vendor == ControlSwitch4_vendor_typedef){
 		ControlSwitch4(adr, low_lux_switch1_2_socket1_2, hight_lux_switch3_4_socket3_4);
+		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == SetSceneForSwitch4_vendor_typedef){
 		SetSceneForSwitch4(adr, low_lux_switch1_2_socket1_2, hight_lux_switch3_4_socket3_4, sceneID);
@@ -1052,23 +1018,14 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	else if(Func_vendor == DelSceneForScreenT_vendor_typedef){
 		DelSceneForTouchScreen(adr, buttonID_controlCurtain);
 	}
+	else if(Func_vendor == SetTimeAction_vendor_typedef){
+		SetActionTime_PIRSensor(adr,condition_lightness);
+	}
 	else if(Func_vendor == SendTempHumForScreenT_vendor_typedef){
 		SendTempHumForScreenT(adr, temp, hum);
 	}
 	else if(Func_vendor == SendTimeForScreenT_vendor_typedef){
 		SendTimeForScreenT(adr, type_hours, attrubute_minute);
-	}
-	else if(Func_vendor == SceneForRGB_vendor_typedef){
-		SetSceneForRGB(adr, appID, srgbID);
-	}
-	else if(Func_vendor == CallSceneRgb_vendor_typedef){
-		CallSceneRgb(appID);
-	}
-	else if(Func_vendor == CallModeRgb_vendor_typedef){
-		CallModeRgb(adr, srgbID);
-	}
-	else if(Func_vendor == DelSceneRgb_vendor_typedef){
-		DelSceneRgb(adr, appID);
 	}
 	else if(Func_vendor == SaveGateway_vendor_typedef){
 		SaveGateway(adr);
@@ -1080,7 +1037,7 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	}
 	else if(Func_vendor == SetTypeDevice_vendor_typedef){
 		SetTypeDevice(adr, type_hours, attrubute_minute, application_second);
-		timeWait = TIMEWAIT;
+		timeWait = 0;
 	}
 	else if(Func_vendor == AskPm_vendor_typedef){
 		AskPm(adr);
@@ -1109,8 +1066,10 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
 	pthread_mutex_trylock(&CMDUART_key);
-	bufferDataUart.push(vrts_DataUartSend);
+	bufferDataUart.push_back(vrts_DataUartSend);
+//	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&CMDUART_key);
+
 #if !PRINTUART
 	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
 	for (int i = 0; i < 4; i++) {

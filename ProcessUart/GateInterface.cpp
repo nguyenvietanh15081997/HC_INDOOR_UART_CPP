@@ -10,7 +10,6 @@
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 #include "../logging/slog.h"
 #include "Provision.hpp"
-#include <pthread.h>
 #include <sys/time.h>
 
 #include <fcntl.h> // Contains file controls like O_RDWR
@@ -28,20 +27,6 @@ static bool					vrb_GWIF_CheckNow = false;
 static bool					vrb_GWIF_RestartMessage = true;
 static bool 				message_Update = false;
 
-uint8_t uuid[50]			= {0};
-uint8_t deviceKey_json[50]	= {0};
-uint8_t appkey[50]			= {0};
-uint8_t netkey[50]			= {0};
-uint8_t netkey_json[50]		= {0};
-uint8_t appkey_json[50]		= {0};
-uint16_t sceneForCCt		= 0;
-bool checkcallscene 		= false;
-
-int tempIndoor 				= 0;
-int humIndoor 				= 0;
-int pm25 					= 0;
-uint8_t mac[30] 			= {0};
-int powRemote 				= 0;
 int serial_port;
 
 char* ToChar(cmdcontrol_t data) {
@@ -116,6 +101,32 @@ static uint16_t getSecondDay(){
 static uint64_t t1, t2;
 void GWIF_WriteMessage(void) {
 	pthread_mutex_trylock(&vrpth_SHAREMESS_Send2GatewayLock);
+	/*if (head != NULL) {
+		cmdcontrol_t dataSendUart = head->dataUart;
+		uint8_t * bufferSendUart;
+		bufferSendUart = (uint8_t *)& dataSendUart;
+		t1 = getMillisOfDay();
+		if ((t1 - t2) >= 400) {
+			write(serial_port, bufferSendUart, 14);
+			tcdrain(serial_port);
+#if PRINTUART
+			printf("\tCmd: ");
+			printf("%2x %2x",dataSendUart.HCI_CMD_GATEWAY[0],dataSendUart.HCI_CMD_GATEWAY[1]);
+			for(int i=0;i<4;i++){
+				printf("%2x ",dataSendUart.opCode00[i]);
+			}
+			printf("%2x %2x %2x %2x ",dataSendUart.retry_cnt,dataSendUart.rsp_max,dataSendUart.adr_dst[0],dataSendUart.adr_dst[1]);
+			printf("%2x %2x ",dataSendUart.opCode[0],dataSendUart.opCode[1]);
+			for(int j = 0;j<(14 - 12);j++){
+				printf("%2x ",dataSendUart.para[j]);
+			}
+			printf("\n");
+#endif
+			head = DellHead();
+			t2 = t1;
+		}
+	}*/
+
 	if (bufferDataUart.size() != 0) {
 		uartSendDev_t data = bufferDataUart.front();
 		t1 = getMillisOfDay();
@@ -123,26 +134,22 @@ void GWIF_WriteMessage(void) {
 			write(serial_port, ToChar(data.dataUart), data.length);
 			tcdrain(serial_port);
 #if PRINTUART
-			printf("\tCmd: ");
-			printf("%2x %2x",data.dataUart.HCI_CMD_GATEWAY[0],data.dataUart.HCI_CMD_GATEWAY[1]);
-			for(int i=0;i<4;i++){
-				printf("%2x ",data.dataUart.opCode00[i]);
+			uint8_t tempUart[200] = {0};
+			memcpy((char *)tempUart,(char *)&data.dataUart.HCI_CMD_GATEWAY[0],data.length);
+			uint8_t temp[4] = { 0 };
+			uint8_t bufferLog[200] = { 0 };
+			for (int j = 0; j < data.length; j++) {
+				sprintf((char *)temp,"%02x ",tempUart[j]);
+				strcat((char *)bufferLog,(char *)temp);
 			}
-			printf("%2x %2x %2x %2x ",data.dataUart.retry_cnt,data.dataUart.rsp_max,data.dataUart.adr_dst[0],data.dataUart.adr_dst[1]);
-			printf("%2x %2x ",data.dataUart.opCode[0],data.dataUart.opCode[1]);
-			for(int j = 0;j<(data.length - 12);j++){
-				printf("%2x ",data.dataUart.para[j]);
-			}
-			printf("\n");
+			slog_print(SLOG_TRACE,1,"<cmd>%s",bufferLog);
 #endif
-			bufferDataUart.pop();
+			bufferDataUart.pop_front();
+			bufferDataUart.shrink_to_fit();
 			t2 = t1;
 		}
 	}
-	else{
-		queue<uartSendDev_t> 	bufferDataUartEmpty;
-		swap(bufferDataUart,bufferDataUartEmpty);
-	}
+
 	pthread_mutex_unlock(&vrpth_SHAREMESS_Send2GatewayLock);
 }
 
@@ -244,7 +251,7 @@ typedef struct processRsp0x52{
 	cb_rsp_function_t 	rspFuncProcess0x52;
 } proccessRsp0x52_t;
 
-#define MAX_FUNCTION0x52_RSP			11
+#define MAX_FUNCTION0x52_RSP			14
 proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{REMOTE_MODULE_AC_TYPE,				RspRemoteStatus},
 		{REMOTE_MODULE_DC_TYPE,				RspRemoteStatus},
@@ -256,8 +263,10 @@ proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{PM_SENSOR_MODULE_PM_TYPE,			RspPmSensor},
 		{TEMP_HUM_MODULE_TYPE,				RspTempHumSensor},
 		{DOOR_SENSOR_MODULE_TYPE,			RspDoorStatus},
-		{SMOKE_SENSOR_MODULE_TYPE,			RspSmoke}
-//		{SWITCH4_MODULE_TYPE,				RspSwitch4},
+		{DOOR_SENSOR_HANGON_MODULE_TYPE,	RspDoorHangOn},
+		{SMOKE_SENSOR_MODULE_TYPE,			RspSmoke},
+		{LIGHT_SENSOR_MODULE_TYPE,			RspLightSensor},
+		{SWITCH4_MODULE_TYPE,				RspStatusSwitch4},
 };
 
 typedef struct processRsp{
@@ -283,7 +292,8 @@ typedef struct processRspVendor{
 	cb_rsp_function_t 	rspFuncVendorProcess;
 } proccessRspVendor_t;
 
-#define MAX_FUNCTIONVENDOR_RSP			23
+/*TODO*/
+#define MAX_FUNCTIONVENDOR_RSP			24
 proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_TYPE_ASK,						RspTypeDevice},
 		{HEADER_TYPE_SET,						RspTypeDevice},
@@ -300,11 +310,11 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_SCENE_LIGHT_PIR_SET,			RspPir_LightAddScene},
 		{HEADER_SCENE_LIGHT_PIR_DEL,			RspPir_LightDelScene},
 		{HEADER_SCENE_PIR_SENSOR_TIMEACTION,	RspPirTimeAction},
-		{HEADER_SCENE_DOOR_SENSOR_SET,			RspDoorSensorAddScene},
-		{HEADER_SCENE_DOOR_SENSOR_DEL,			RspDoorSensorDelScene},
-//		{HEADER_CONTROL_SWITCH4,				RspControlSwitch4},
-//		{HEADER_SCENE_SWITCH4_SET,				RspSwitch4AddScene},
-//		{HEADER_SCENE_SWITCH4_DEL,				RspSwitch4DelScene},
+//		{HEADER_SCENE_DOOR_SENSOR_SET,			RspDoorSensorAddScene},
+//		{HEADER_SCENE_DOOR_SENSOR_DEL,			RspDoorSensorDelScene},
+		{HEADER_CONTROL_SWITCH4,				RspControlSwitch4},
+		{HEADER_SCENE_SWITCH4_SET,				RspAddSceneSwitch4},
+		{HEADER_SCENE_SWITCH4_DEL,				RspDelSceneSwitch4},
 		{ST_HEADER_ADD_SCENE,					RspScreenTouchAddScene},
 		{ST_HEADER_DEL_SCENE,					RspScreenTouchDelScene},
 		{ST_HEADER_DELALL_SCENE,				RspScreenTouchDelAllScene},
@@ -326,12 +336,15 @@ int GWIF_ProcessData (void)
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
 #if PRINTUART
-		printf("\tRsp: Length: %d ,Message: ",vrui_GWIF_LengthMeassge);
-		printf("%2x ", vrts_GWIF_IncomeMessage->Opcode);
-		for (int i = 0; i < vrui_GWIF_LengthMeassge; i++) {
-			printf("%2x ",vrts_GWIF_IncomeMessage->Message[i]);
+		if(vrts_GWIF_IncomeMessage->Message[0] != HCI_GATEWAY_CMD_UPDATE_MAC){
+			uint8_t temp[4] = { 0 };
+			uint8_t bufferLog[200] = { 0 };
+			for(int n = 0; n<vrui_GWIF_LengthMeassge;n++){
+				sprintf((char *)temp,"%02x ",vrts_GWIF_IncomeMessage->Message[n]);
+				strcat((char *)bufferLog,(char *)temp);
+			}
+			slog_print(SLOG_TRACE,1,"<rsp>length: %d, tscript: %x, message: %s",vrui_GWIF_LengthMeassge,vrts_GWIF_IncomeMessage->Opcode,bufferLog);
 		}
-		printf("\n");
 #endif
 
 		if (gvrb_Provision) {
@@ -471,20 +484,27 @@ int GWIF_ProcessData (void)
 				}
 				if (vrts_GWIF_IncomeMessage->Message[5] == RD_OPCODE_TYPE_RSP) {
 					if (VENDOR_ID == (vrts_GWIF_IncomeMessage->Message[6] | (vrts_GWIF_IncomeMessage->Message[7] << 8))) {
-						if ((vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8))== HEADER_TYPE_SAVEGW) {
+						uint16_t headVendor = vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8);
+						if (headVendor == HEADER_TYPE_SAVEGW) {
 							flag_checkSaveGW = true;
 							RspSaveGw(vrts_GWIF_IncomeMessage);
 						}
-						else if((vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8)) == HEADER_TYPE_ASK){
+						else if((headVendor == HEADER_TYPE_SET) || (headVendor == HEADER_TYPE_ASK)){
 							flag_checkTypeDEV = true;
 							RspTypeDevice(vrts_GWIF_IncomeMessage);
+						}
+						else if (headVendor == ST_HEADER_REQUEST_TIME){
+							RequestTime(vrts_GWIF_IncomeMessage);
+						}
+						else if (headVendor == ST_HEADER_REQUEST_TEMP_HUM){
+							RequestTempHum(vrts_GWIF_IncomeMessage);
 						}
 					}
 				}
 			}
 		}
 		else {
-			if(vrts_GWIF_IncomeMessage->Message[0] ==HCI_GATEWAY_RSP_OP_CODE){
+			if(vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_RSP_OP_CODE){
 				uint8_t opcodeVendor = vrts_GWIF_IncomeMessage->Message[5];
 				uint16_t vendorId = vrts_GWIF_IncomeMessage->Message[6] |(vrts_GWIF_IncomeMessage->Message[7]<<8);
 				uint16_t headerVendor = vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8);
@@ -531,6 +551,7 @@ int GWIF_ProcessData (void)
 }
 
 void* GWINF_Thread(void *vargp) {
+	slog_print(SLOG_INFO, 1, "Thread uart start");
 	GWIF_Init();
 	while (1) {
 		GWIF_WriteMessage();

@@ -2,6 +2,7 @@
 
 #include "../Mqtt/Mqtt.hpp"
 #include "../ProcessUart/OpCode.h"
+#include "../ProcessUart/LinkerList.hpp"
 
 
 #define LENGTH_ADDSCENE 			20
@@ -226,7 +227,8 @@ void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = 500;
 	pthread_mutex_trylock(&SCREENTOUCH_keyLockMutex);
-	bufferDataUart.push(vrts_DataUartSend);
+	bufferDataUart.push_back(vrts_DataUartSend);
+//	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&SCREENTOUCH_keyLockMutex);
 
 #if !PRINTUART
@@ -578,6 +580,10 @@ void RequestTempHum(TS_GWIF_IncomingData *data) {
 	if((phumIndoor % 10) >= 5){
 		hum++;
 	}
+
+//	cout <<"---> Temp: " << ptempIndoor << endl;
+//	cout <<"---> Hum: " << phumIndoor << endl;
+
 	SendData2ScreeTouch(st_enum_weatherIndoor, adr, 0, 0, 0, temp,
 			hum, ppm25, 0, 0, 0, 0, 0, 0, 0);
 }

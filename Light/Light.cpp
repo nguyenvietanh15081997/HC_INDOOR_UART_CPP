@@ -166,11 +166,10 @@ void RspAddDelGroup(TS_GWIF_IncomingData *data) {
 
 void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint16_t sceneAddId;
+	uint16_t sceneAddId = data->Message[8] | (data->Message[9] << 8);
 	string cmd = "";
-	if (gvrb_AddSceneLight) {
+	if (sceneAddId == gSceneIdDel) {
 		cmd = "ADDSCENE";
-		sceneAddId = data->Message[8] | (data->Message[9] << 8);
 	} else {
 		cmd = "DELSCENE";
 		sceneAddId = gSceneIdDel;
@@ -198,21 +197,38 @@ void RspCallScene(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	int length = data->Length[0] | (data->Length[1] << 8);
 	uint16_t sceneId;
-	if (length == 13) {
+	uint8_t srgbId;
+	if ((length == 13) || (length == 15)) {
 		sceneId = data->Message[9] | (data->Message[10] << 8);
+		srgbId = data->Message[13];
 	} else {
 		sceneId = data->Message[7] | (data->Message[8] << 8);
+		srgbId = data->Message[11];
 	}
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
-	json.StartObject();
-		json.Key("CMD");json.String("CALLSCENE");
-		json.Key("DATA");
+	if(sceneId){
 		json.StartObject();
-			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-			json.Key("SCENEID");json.Int(sceneId);
+			json.Key("CMD");json.String("CALLSCENE");
+			json.Key("DATA");
+			json.StartObject();
+				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+				json.Key("SCENEID");json.Int(sceneId);
+			json.EndObject();
 		json.EndObject();
-	json.EndObject();
+	}
+	else {
+		if(srgbId){
+			json.StartObject();
+				json.Key("CMD");json.String("CALLMODE_RGB");
+				json.Key("DATA");
+				json.StartObject();
+					json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+					json.Key("SRGBID");json.Int(srgbId);
+				json.EndObject();
+			json.EndObject();
+		}
+	}
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
@@ -225,23 +241,25 @@ void RspCallScene(TS_GWIF_IncomingData *data) {
 void RspCallModeRgb(TS_GWIF_IncomingData *data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	uint8_t modeRgb = data->Message[12];
-	StringBuffer dataMqtt;
-	Writer<StringBuffer> json(dataMqtt);
-	json.StartObject();
-		json.Key("CMD");json.String("CALLMODE_RGB");
-		json.Key("DATA");
+	if(modeRgb){
+		StringBuffer dataMqtt;
+		Writer<StringBuffer> json(dataMqtt);
 		json.StartObject();
-			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-			json.Key("SRGBID");json.Int(modeRgb);
+			json.Key("CMD");json.String("CALLMODE_RGB");
+			json.Key("DATA");
+			json.StartObject();
+				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+				json.Key("SRGBID");json.Int(modeRgb);
+			json.EndObject();
 		json.EndObject();
-	json.EndObject();
 
-//	cout << dataMqtt.GetString() << endl;
-	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	delete sendT;
+	//	cout << dataMqtt.GetString() << endl;
+		string s = dataMqtt.GetString();
+		char * sendT = new char[s.length()+1];
+		strcpy(sendT, s.c_str());
+		mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+		delete sendT;
+	}
 }
 
 void RspSaveGw(TS_GWIF_IncomingData *data){
@@ -277,7 +295,7 @@ void RspTypeDevice(TS_GWIF_IncomingData *data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	uint16_t typeDev = TypeConvert(data->Message[10],data->Message[11],data->Message[12]);
 	char framVer[5] = {0};
-	sprintf((char *)framVer,"%d,%d",data->Message[13],data->Message[14]);
+	sprintf((char *)framVer,"%d.%d",data->Message[14],data->Message[15]);
 
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);

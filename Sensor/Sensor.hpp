@@ -51,9 +51,8 @@ typedef struct doorRspScene{
 
 typedef struct doorSensorStatus{
 	uint16_t 	header;
-	uint16_t 	sceneId;
-	uint8_t 	status;
 	uint8_t 	hangOn;
+	uint8_t 	status;
 }doorSensorStatus_t;
 
 typedef struct tempHumSensorStatus{
@@ -98,6 +97,8 @@ void RspDoorSensorAddScene(TS_GWIF_IncomingData *data);
 
 void RspDoorSensorDelScene(TS_GWIF_IncomingData *data);
 
+void RspDoorHangOn(TS_GWIF_IncomingData *data);
+
 void RspDoorStatus(TS_GWIF_IncomingData *data);
 
 void RspPmSensorTempHum(TS_GWIF_IncomingData *data);
@@ -107,6 +108,8 @@ void RspPmSensor(TS_GWIF_IncomingData *data);
 void RspTempHumSensor(TS_GWIF_IncomingData *data);
 
 void RspPirSenSor(TS_GWIF_IncomingData *data);
+
+void RspLightSensor(TS_GWIF_IncomingData *data);
 
 void RspSmoke(TS_GWIF_IncomingData *data);
 
