@@ -105,7 +105,9 @@ static void Stop(char *msg) {
 		slog_print(SLOG_INFO, 1, "<provision>Provision stop");
 		MODE_PROVISION=false;
 //		ControlMessage(3, OUTMESSAGE_ScanStop);
-		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
+//		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
+		uartSendDev_t temp = AssignData(OUTMESSAGE_ScanStop,3);
+		ring_push_head((ringbuffer_t* )&bufferDataUart, (void *)&temp);
 		//pthread_cancel(tmp);
 		flag_selectmac     = false;
 		flag_getpro_info   = false;
@@ -126,12 +128,16 @@ static void Stop(char *msg) {
 	json.String("STOP");
 	json.EndObject();
 
-//	cout << sendToDB.GetString() << endl;
+	cout << sendToDB.GetString() << endl;
 	string s = sendToDB.GetString();
-	char *msgSend = new char[s.length() + 1];
-	strcpy(msgSend, s.c_str());
-	mqtt_send(mosq,(char*) TP_PUB, (char*)msgSend);
-	delete msgSend;
+	dataSendMqtt_t mqttSend;
+	char * sendT = new char[s.length()+1];
+	strcpy(sendT, s.c_str());
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
+	delete sendT;
 }
 
 static void Update(char *msg) {
@@ -147,6 +153,7 @@ static void Update(char *msg) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, UpdateLight_typedef, adr,
 							NULL8, NULL8, NULL16, NULL16, NULL16, NULL16,
 							NULL16, NULL16, NULL16, NULL16, 12);
+					cout << "index: " << i << endl;
 				}
 			}
 		}
@@ -562,7 +569,7 @@ static void CallModeRgb(char *msg) {
 					adr = adrObj[i].GetInt();
 					FunctionPer(HCI_CMD_GATEWAY_CMD, CallModeRgb_vendor_typedef,
 							adr, NULL16, srgbId, NULL16, NULL16, NULL16, NULL16,
-							NULL16, NULL16, NULL16, NULL16, 17);
+							NULL16, NULL16, NULL16, NULL16, 21);
 				}
 			}
 		}
@@ -1408,41 +1415,6 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"DELHC",						(DelHc)}
 };
 
-#if 0
-static void testProcess(bufferDataMqtt_t data){
-	Document document;
-	document.Parse(data.dataMqtt);
-	uint16_t time = 0;
-	uint16_t adr;
-	uint16_t valueOnOff;
-	if (document.IsObject()) {
-		if (document.HasMember("TIME")) {
-			time = document["TIME"].GetInt();
-		}
-		if (document.HasMember("DATA")) {
-			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("VALUE_ONOFF")) {
-				adr = data["DEVICE_UNICAST_ID"].GetInt();
-				valueOnOff = data["VALUE_ONOFF"].GetInt();
-				if (!startProcessRoom) {
-					FunctionPer(HCI_CMD_GATEWAY_CMD, ControlOnOff_typedef, adr,
-							NULL8, valueOnOff, NULL16, NULL16, NULL16,
-							NULL16, NULL16, NULL16, NULL16, GetTransition(time),
-							16);
-				} else {
-					FunctionPer(HCI_CMD_GATEWAY_CMD, ControlOnoff_NoAck_typedef,
-							adr, NULL8, valueOnOff, NULL16, NULL16, NULL16,
-							NULL16, NULL16, NULL16, NULL16, GetTransition(time),
-							16);
-				}
-			}
-		}
-	}
-	Document objDelete;
-	document.Swap(objDelete);
-}
-#endif
-
 void JsonHandle(char * data) {
 	Document document;
 	document.Parse(data);
@@ -1455,11 +1427,6 @@ void JsonHandle(char * data) {
 					listCommandMQTT[i].funcProcess(data);
 					break;
 				}
-			}
-#endif
-#if 0
-			if(cmd.compare("ONOFF") == 0){
-				testProcess(data);
 			}
 #endif
 		}

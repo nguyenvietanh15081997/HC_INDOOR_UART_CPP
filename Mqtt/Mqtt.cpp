@@ -6,13 +6,20 @@
 #include "../JsonHandle/JsonProcess.hpp"
 #include "../logging/slog.h"
 #include "../Include/Include.hpp"
-#include "../ProcessUart/RingBuffer.h"
 #include <fstream>
 
-#define MAXDATAMQTT			2048
+/*
+ * buffer data mqtt receive
+ */
+#define MAXDATAMQTT			512
+#define MAX_MSG_MQTT 		512
+typedef struct bufferDataMqtt{
+	char dataMqtt[MAX_MSG_MQTT];
+}bufferDataMqtt_t;
+static ringbuffer_t vr_RingBufDataMqtt;
 
 struct mosquitto *mosq;
-static ringbuffer_t vr_RingBufDataMqtt;
+
 static char qos = 1;
 static int run = 1;
 
@@ -21,21 +28,31 @@ using namespace rapidjson;
 
 //queue<bufferDataMqtt_t> bufferMqtt;
 
-int mqtt_send(struct mosquitto *mosq, char *topic, char *msg) {
+static int mqtt_send(struct mosquitto *mosq, char *topic, char *msg) {
 	mosquitto_publish(mosq, NULL, topic, strlen(msg), msg, qos, 0);
 	slog_info("<mqtt>send: %s", msg);
 	return 0;
 }
 
-void connect_callback(struct mosquitto *mosq, void *obj, int result) {
+static void CheckSendMqtt(){
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	if(bufferSendMqtt.count){
+		dataSendMqtt_t tempMqttSend;
+		ring_pop_tail((ringbuffer_t*) &bufferSendMqtt, (void*) &tempMqttSend);
+		cout << bufferSendMqtt.count << endl;
+		mqtt_send(mosq,(char *)TP_PUB,(char *)&tempMqttSend.dataSendMqtt[0]);
+	}
+	pthread_mutex_unlock(&keyBufferSendMqtt);
+}
+
+static void connect_callback(struct mosquitto *mosq, void *obj, int result) {
 	slog_info("<mqtt>%s: Connect callback, rc=%d", mqtt_host, result);
 	mosquitto_subscribe(mosq, NULL, TP_SUB, qos);
 	mqtt_send(mosq, TP_PUB, "{\"CMD\":\"CONNECTED\"}");
 }
 
-void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
+static void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
 	int lengthMsg = strlen((char *)message->payload);
-#if 1
 	bufferDataMqtt_t dataPush = {{0}};
 	memcpy(dataPush.dataMqtt,message->payload,lengthMsg+1);
 	Document document;
@@ -54,24 +71,27 @@ void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_
 	}
 	Document objDelete;
 	document.Swap(objDelete);
-#endif
 }
+
 static char mqtt_password[64] = {0};
 static void GetPassMqtt(char* nameFile){
 	FILE *file;
 	if ((file = fopen(nameFile,"r")) != NULL){
 		fscanf(file,"%[^\n]",mqtt_password);
 		fclose(file);
+		slog_print(SLOG_INFO, 1, "pass: %s",(char *)mqtt_password);
 	}
 }
 
 void* MQTT_Thread(void *argv) {
-
 	char * locationFile = "/etc/PassMqtt.txt";
 	GetPassMqtt(locationFile);
 
-	slog_print(SLOG_INFO, 1, "Thread mqtt start");
-	ring_init(&vr_RingBufDataMqtt,MAXDATAMQTT,sizeof(struct bufferDataMqtt));
+	slog_print(SLOG_INFO, 1, "thread mqtt start");
+	ring_init(&vr_RingBufDataMqtt, MAXDATAMQTT, sizeof(struct bufferDataMqtt));
+	ring_init(&bufferSendMqtt, MAX_BUFFEMQTTSEND, sizeof(struct dataSendMqtt));
+	ring_init(&bufferDataUart, SIZE_BUF_UARTSEND, sizeof(struct uartSendDev));
+
 	char clientid[24];
 	int rc = 0;
 	int abc = 0;
@@ -91,16 +111,13 @@ void* MQTT_Thread(void *argv) {
 		mosquitto_subscribe(mosq, NULL, TP_SUB, qos);
 		while (run) {
 			rc = abc = mosquitto_loop(mosq, -1, 1);
-//			if(bufferMqtt.size() == 0) {
-//				queue<bufferMqtt_t > bufferEmpty;
-//				swap(bufferMqtt, bufferEmpty);
-//			}
+			CheckSendMqtt();
 			if (run && rc) {
 				slog_warn("Connection mqtt error");
 				sleep(4);
 				mosquitto_reconnect_async(mosq);
 			}
-			usleep(10000);
+			usleep(1000);
 		}
 		mosquitto_destroy(mosq);
 	}

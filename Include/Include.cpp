@@ -8,12 +8,17 @@
 #include "Include.hpp"
 
 using namespace std;
-deque<uartSendDev_t> 	bufferDataUart;
+ringbuffer_t 			bufferDataUart;
+pthread_mutex_t 		keyBufferUartSend = PTHREAD_MUTEX_INITIALIZER;
+
+ringbuffer_t            bufferSendMqtt;
+pthread_mutex_t 		keyBufferSendMqtt = PTHREAD_MUTEX_INITIALIZER;
 cmdcontrol_t 			vrts_CMD_STRUCTURE;
 bool 					gvrb_AddSceneLight;
 bool 					gvrb_AddGroupLight;
 bool					gvrb_Provision;
 uint16_t 				gSceneIdDel;
+
 
 int ptempIndoor;
 uint16_t phumIndoor;

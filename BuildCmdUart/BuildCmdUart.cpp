@@ -7,8 +7,6 @@
 #include "../Sensor/Sensor.hpp"
 #include "string.h"
 
-pthread_mutex_t CMDUART_key = PTHREAD_MUTEX_INITIALIZER;
-
 #define TIMEWAIT			500
 #define TIMECONFIGROOM  	600
 #define TIMEWAIT_REMOTE		600
@@ -164,6 +162,25 @@ static void CmdHSL_Set(uint16_t uniAdrHSL, uint16_t h, uint16_t s, uint16_t l,
 	vrts_CMD_STRUCTURE.para[6] = 0;
 	vrts_CMD_STRUCTURE.para[7] = transition & 0xFF;
 	vrts_CMD_STRUCTURE.para[8] = (transition >> 8) & 0xFF;
+}
+
+/*
+ * Same frame HSL set
+ */
+static void CmdCallModeRgb(uint16_t adr, uint8_t rgb){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = LIGHT_HSL_SET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (LIGHT_HSL_SET >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = 0;
+	vrts_CMD_STRUCTURE.para[1] = 0;
+	vrts_CMD_STRUCTURE.para[2] = 0;
+	vrts_CMD_STRUCTURE.para[3] = 0;
+	vrts_CMD_STRUCTURE.para[4] = 0;
+	vrts_CMD_STRUCTURE.para[5] = 0;
+	vrts_CMD_STRUCTURE.para[6] = rgb & 0xFF;
+	vrts_CMD_STRUCTURE.para[7] = 0;
+	vrts_CMD_STRUCTURE.para[8] = 0;
 }
 
 static void CmdUpdateLight(uint16_t adr) {
@@ -333,7 +350,7 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		CmdCallSence(unicastAdr,parSenceId, 0, transition_par_t);
 	}
 	else if(Func == CallModeRgb_vendor_typedef){
-		CmdCallSence(unicastAdr,0, parStatusOnOff, transition_par_t);
+		CmdCallModeRgb(unicastAdr,parStatusOnOff);
 	}
 	else if(Func == DelSceneRgb_vendor_typedef){
 		gSceneIdDel = parSenceId;
@@ -343,10 +360,10 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	pthread_mutex_trylock(&CMDUART_key);
-	bufferDataUart.push_back(vrts_DataUartSend);
-//	head = AddTail(vrts_CMD_STRUCTURE);
-	pthread_mutex_unlock(&CMDUART_key);
+	pthread_mutex_trylock(&keyBufferUartSend);
+	ring_push_head((ringbuffer_t *)&bufferDataUart, (void *)&vrts_DataUartSend);
+//	bufferDataUart.push_back(vrts_DataUartSend);
+	pthread_mutex_unlock(&keyBufferUartSend);
 
 #if !PRINTUART
 	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
@@ -1065,10 +1082,11 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	pthread_mutex_trylock(&CMDUART_key);
-	bufferDataUart.push_back(vrts_DataUartSend);
+	pthread_mutex_trylock(&keyBufferUartSend);
+	ring_push_head((ringbuffer_t *)&bufferDataUart, (void *)&vrts_DataUartSend);
+//	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);
-	pthread_mutex_unlock(&CMDUART_key);
+	pthread_mutex_unlock(&keyBufferUartSend);
 
 #if !PRINTUART
 	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);

@@ -287,9 +287,5 @@ void Function_Vendor(uint16_t cmd,\
 		uint16_t 	transition_par_t,\
 		uint16_t 	cmdLength
 		);
-//uint16_t Percent2ParamCCT(uint8_t percent);
-//uint8_t Param2PrecentCCT(uint16_t param);
-//uint16_t Percent2ParamDIM(uint8_t percent);
-//uint8_t Param2PrecentDIM(uint16_t param);
 
 #endif 

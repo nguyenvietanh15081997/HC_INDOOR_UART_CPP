@@ -22,7 +22,6 @@ extern uint8_t 			vrsc_SHAREMESS_Send2GatewayMessage[OUTMESSAGE_MAXLENGTH];
 extern uint16_t			vrui_SHAREMESS_Send2GatewayLength;
 extern bool				vrb_SHAREMESS_Send2GatewayAvailabe;
 extern pthread_mutex_t	vrpth_SHAREMESS_Send2GatewayLock;
-extern pthread_mutex_t	vrpth_SHAREMESS_FlagCheckRsp;
 
 #ifdef __cplusplus
 }

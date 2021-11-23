@@ -100,57 +100,30 @@ static uint16_t getSecondDay(){
 
 static uint64_t t1, t2;
 void GWIF_WriteMessage(void) {
-	pthread_mutex_trylock(&vrpth_SHAREMESS_Send2GatewayLock);
-	/*if (head != NULL) {
-		cmdcontrol_t dataSendUart = head->dataUart;
-		uint8_t * bufferSendUart;
-		bufferSendUart = (uint8_t *)& dataSendUart;
-		t1 = getMillisOfDay();
-		if ((t1 - t2) >= 400) {
-			write(serial_port, bufferSendUart, 14);
-			tcdrain(serial_port);
-#if PRINTUART
-			printf("\tCmd: ");
-			printf("%2x %2x",dataSendUart.HCI_CMD_GATEWAY[0],dataSendUart.HCI_CMD_GATEWAY[1]);
-			for(int i=0;i<4;i++){
-				printf("%2x ",dataSendUart.opCode00[i]);
-			}
-			printf("%2x %2x %2x %2x ",dataSendUart.retry_cnt,dataSendUart.rsp_max,dataSendUart.adr_dst[0],dataSendUart.adr_dst[1]);
-			printf("%2x %2x ",dataSendUart.opCode[0],dataSendUart.opCode[1]);
-			for(int j = 0;j<(14 - 12);j++){
-				printf("%2x ",dataSendUart.para[j]);
-			}
-			printf("\n");
-#endif
-			head = DellHead();
-			t2 = t1;
-		}
-	}*/
-
-	if (bufferDataUart.size() != 0) {
-		uartSendDev_t data = bufferDataUart.front();
+	pthread_mutex_trylock(&keyBufferUartSend);
+	if (bufferDataUart.count) {
+		uartSendDev_t data;
+		ring_pop_tail((ringbuffer_t*) &bufferDataUart, (void*) &data);
 		t1 = getMillisOfDay();
 		if ((t1 - t2) >= data.timeWait) {
 			write(serial_port, ToChar(data.dataUart), data.length);
 			tcdrain(serial_port);
 #if PRINTUART
-			uint8_t tempUart[200] = {0};
-			memcpy((char *)tempUart,(char *)&data.dataUart.HCI_CMD_GATEWAY[0],data.length);
+			uint8_t tempUart[200] = { 0 };
+			memcpy((char*) tempUart, (char*) &data.dataUart.HCI_CMD_GATEWAY[0],
+					data.length);
 			uint8_t temp[4] = { 0 };
 			uint8_t bufferLog[200] = { 0 };
 			for (int j = 0; j < data.length; j++) {
-				sprintf((char *)temp,"%02x ",tempUart[j]);
-				strcat((char *)bufferLog,(char *)temp);
+				sprintf((char*) temp, "%02x ", tempUart[j]);
+				strcat((char*) bufferLog, (char*) temp);
 			}
-			slog_print(SLOG_TRACE,1,"<cmd>%s",bufferLog);
+			slog_print(SLOG_TRACE, 1, "<cmd>%s", bufferLog);
 #endif
-			bufferDataUart.pop_front();
-			bufferDataUart.shrink_to_fit();
 			t2 = t1;
 		}
 	}
-
-	pthread_mutex_unlock(&vrpth_SHAREMESS_Send2GatewayLock);
+	pthread_mutex_unlock(&keyBufferUartSend);
 }
 
 static uint8_t read_buf[256];
@@ -158,7 +131,6 @@ static int num_bytes;
 static int num_count2Push;
 
 void GWIF_Read2Buffer (void){
-	pthread_mutex_trylock(&vrpth_SHAREMESS_Send2GatewayLock);
 	if(num_bytes == 0){
 		if(Pro_startCount){
 			Pro_startCount = false;
@@ -186,7 +158,6 @@ void GWIF_Read2Buffer (void){
 			num_count2Push++;
 		}
 	}
-	pthread_mutex_unlock(&vrpth_SHAREMESS_Send2GatewayLock);
 }
 
 void GWIF_CheckData()
@@ -339,7 +310,7 @@ int GWIF_ProcessData (void)
 		if(vrts_GWIF_IncomeMessage->Message[0] != HCI_GATEWAY_CMD_UPDATE_MAC){
 			uint8_t temp[4] = { 0 };
 			uint8_t bufferLog[200] = { 0 };
-			for(int n = 0; n<vrui_GWIF_LengthMeassge;n++){
+			for(int n = 0; n<(vrui_GWIF_LengthMeassge-1);n++){
 				sprintf((char *)temp,"%02x ",vrts_GWIF_IncomeMessage->Message[n]);
 				strcat((char *)bufferLog,(char *)temp);
 			}
@@ -551,7 +522,7 @@ int GWIF_ProcessData (void)
 }
 
 void* GWINF_Thread(void *vargp) {
-	slog_print(SLOG_INFO, 1, "Thread uart start");
+	slog_print(SLOG_INFO, 1, "thread uart start");
 	GWIF_Init();
 	while (1) {
 		GWIF_WriteMessage();

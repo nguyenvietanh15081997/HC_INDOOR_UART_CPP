@@ -45,9 +45,13 @@ void RspOnoff(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -74,9 +78,13 @@ void RspCCT(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -103,9 +111,13 @@ void RspDIM(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -130,9 +142,13 @@ void RspHSL(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -158,9 +174,13 @@ void RspAddDelGroup(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -187,9 +207,13 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -232,9 +256,13 @@ void RspCallScene(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -255,9 +283,13 @@ void RspCallModeRgb(TS_GWIF_IncomingData *data){
 
 	//	cout << dataMqtt.GetString() << endl;
 		string s = dataMqtt.GetString();
+		dataSendMqtt_t mqttSend;
 		char * sendT = new char[s.length()+1];
 		strcpy(sendT, s.c_str());
-		mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+		memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+		pthread_mutex_lock(&keyBufferSendMqtt);
+		ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+		pthread_mutex_unlock(&keyBufferSendMqtt);
 		delete sendT;
 	}
 }
@@ -278,9 +310,13 @@ void RspSaveGw(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -316,9 +352,13 @@ void RspTypeDevice(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
@@ -337,9 +377,13 @@ void RspResetNode (TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
+	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
+	pthread_mutex_lock(&keyBufferSendMqtt);
+	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
+	pthread_mutex_unlock(&keyBufferSendMqtt);
 	delete sendT;
 }
 
