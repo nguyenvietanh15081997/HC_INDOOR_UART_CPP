@@ -1,19 +1,17 @@
-/*
- * Light.c
- */
 
 #include "BuildCmdUart.hpp"
 #include "../logging/slog.h"
 #include "../Sensor/Sensor.hpp"
 #include "string.h"
 
+#define TIMEWAIT_UPDATE		400
 #define TIMEWAIT			500
 #define TIMECONFIGROOM  	600
 #define TIMEWAIT_REMOTE		600
 
-uint8_t parRetry_cnt = 0x02;
-uint8_t parRsp_Max = 0x00;
-uint8_t parFuture = 0;
+static uint8_t parRetry_cnt = 0x02;
+static uint8_t parRsp_Max = 0x00;
+static uint8_t parFuture = 0;
 
 static void CmdResetNode(uint16_t uniAdrReset) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrReset & 0xFF;
@@ -114,6 +112,17 @@ static void CmdCallSence(uint16_t adr,uint16_t senceId, uint8_t sRgbId, uint16_t
 	vrts_CMD_STRUCTURE.para[4] = (transition >> 8) & 0xFF;
 }
 
+#define HEADER_CALLMODE_RGB  0x0919
+static void CmdCallModeRgb(uint16_t adr, uint8_t srgb){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = LIGHTNESS_LINEAR_SET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (LIGHTNESS_LINEAR_SET >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = HEADER_CALLMODE_RGB & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = (HEADER_CALLMODE_RGB >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = srgb;
+}
+
 static void CmdDelSence(uint16_t uniAdrDelSence, uint16_t senceId) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrDelSence & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (uniAdrDelSence >> 8) & 0xFF;
@@ -162,32 +171,6 @@ static void CmdHSL_Set(uint16_t uniAdrHSL, uint16_t h, uint16_t s, uint16_t l,
 	vrts_CMD_STRUCTURE.para[6] = 0;
 	vrts_CMD_STRUCTURE.para[7] = transition & 0xFF;
 	vrts_CMD_STRUCTURE.para[8] = (transition >> 8) & 0xFF;
-}
-
-/*
- * Same frame HSL set
- */
-static void CmdCallModeRgb(uint16_t adr, uint8_t rgb){
-	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = LIGHT_HSL_SET & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[1] = (LIGHT_HSL_SET >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = 0;
-	vrts_CMD_STRUCTURE.para[1] = 0;
-	vrts_CMD_STRUCTURE.para[2] = 0;
-	vrts_CMD_STRUCTURE.para[3] = 0;
-	vrts_CMD_STRUCTURE.para[4] = 0;
-	vrts_CMD_STRUCTURE.para[5] = 0;
-	vrts_CMD_STRUCTURE.para[6] = rgb & 0xFF;
-	vrts_CMD_STRUCTURE.para[7] = 0;
-	vrts_CMD_STRUCTURE.para[8] = 0;
-}
-
-static void CmdUpdateLight(uint16_t adr) {
-	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >>8 ) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = LIGHTOPCODE_UPDATE & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[1] = (LIGHTOPCODE_UPDATE >> 8) & 0xFF;
 }
 
 static void CmdSetTimePoll(uint16_t uniAdrSensor, uint16_t timePoll) {
@@ -263,6 +246,31 @@ static void CmdHSL_Set_NoAck(uint16_t uniAdrHSL, uint16_t h, uint16_t s,
 	vrts_CMD_STRUCTURE.para[8] = (transition >> 8) & 0xFF;
 }
 
+void CmdUpdateLight(uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
+	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
+	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd>>8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode00[0] = 0;
+	vrts_CMD_STRUCTURE.opCode00[1] = 0;
+	vrts_CMD_STRUCTURE.opCode00[2] = 0;
+	vrts_CMD_STRUCTURE.opCode00[3] = 0;
+	vrts_CMD_STRUCTURE.retry_cnt = parRetry_cnt;
+	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >>8 ) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = LIGHTOPCODE_UPDATE & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (LIGHTOPCODE_UPDATE >> 8) & 0xFF;
+
+	uartSendDev_t vrts_UartUpdate;
+	vrts_UartUpdate.length = cmdLength;
+	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
+	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
+	pthread_mutex_trylock(&vrpth_SendUart);
+	if(!gvrb_Provision){
+		bufferUartUpdate.push_back(vrts_UartUpdate);
+	}
+	pthread_mutex_unlock(&vrpth_SendUart);
+}
+
 void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		uint16_t adrGroup, uint8_t parStatusOnOff, uint16_t parLightness,
 		uint16_t parCCT, uint16_t parSenceId, uint16_t parTimePoll,
@@ -315,9 +323,9 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	else if(Func == Lightness_Set_NoAck_typedef){
 		CmdLightness_Set_NoAck(unicastAdr, parLightness,transition_par_t);
 	}
-	else if (Func == UpdateLight_typedef){
-		CmdUpdateLight(unicastAdr);
-	}
+//	else if (Func == UpdateLight_typedef){
+//		CmdUpdateLight(unicastAdr);
+//	}
 	else if(Func == AddSence_typedef){
 		gSceneIdDel = parSenceId;
 		CmdAddSence(unicastAdr, parSenceId,0);
@@ -350,7 +358,7 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		CmdCallSence(unicastAdr,parSenceId, 0, transition_par_t);
 	}
 	else if(Func == CallModeRgb_vendor_typedef){
-		CmdCallModeRgb(unicastAdr,parStatusOnOff);
+		CmdCallModeRgb(unicastAdr, parStatusOnOff);
 	}
 	else if(Func == DelSceneRgb_vendor_typedef){
 		gSceneIdDel = parSenceId;
@@ -360,10 +368,9 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	pthread_mutex_trylock(&keyBufferUartSend);
-	ring_push_head((ringbuffer_t *)&bufferDataUart, (void *)&vrts_DataUartSend);
-//	bufferDataUart.push_back(vrts_DataUartSend);
-	pthread_mutex_unlock(&keyBufferUartSend);
+	pthread_mutex_trylock(&vrpth_SendUart);
+	bufferDataUart.push_back(vrts_DataUartSend);
+	pthread_mutex_unlock(&vrpth_SendUart);
 
 #if !PRINTUART
 	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
@@ -378,32 +385,6 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	}
 	printf("\n");
 #endif
-}
-
-void HeartBeat(uint16_t cmd, uint16_t drsHeartbeat, uint16_t srcHeartbeat,
-		uint8_t countLog, uint8_t periodLog, uint8_t tll, uint16_t feature,
-		uint16_t cmdLength) {
-	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
-	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode00[0] = 0;
-	vrts_CMD_STRUCTURE.opCode00[1] = 0;
-	vrts_CMD_STRUCTURE.opCode00[2] = 0;
-	vrts_CMD_STRUCTURE.opCode00[3] = 0;
-	vrts_CMD_STRUCTURE.retry_cnt = parRetry_cnt;
-	vrts_CMD_STRUCTURE.rsp_max = 0;
-	vrts_CMD_STRUCTURE.adr_dst[0] = drsHeartbeat & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (drsHeartbeat >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = HEARTBEAT_PUB_SET & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[1] = (HEARTBEAT_PUB_SET >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = srcHeartbeat & 0XFF;
-	vrts_CMD_STRUCTURE.para[1] = (srcHeartbeat >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = countLog;
-	vrts_CMD_STRUCTURE.para[3] = periodLog;
-	vrts_CMD_STRUCTURE.para[4] = tll;
-	vrts_CMD_STRUCTURE.para[5] = feature & 0xFF;
-	vrts_CMD_STRUCTURE.para[6] = (feature >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[7] = vrts_CMD_STRUCTURE.para[8] = 0;
-
 }
 
 static void SetSceneForRemote_DC(uint16_t adrRemote_DC, uint8_t buttonId,
@@ -1082,24 +1063,9 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	pthread_mutex_trylock(&keyBufferUartSend);
-	ring_push_head((ringbuffer_t *)&bufferDataUart, (void *)&vrts_DataUartSend);
-//	bufferDataUart.push_back(vrts_DataUartSend);
+	pthread_mutex_trylock(&vrpth_SendUart);
+	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);
-	pthread_mutex_unlock(&keyBufferUartSend);
-
-#if !PRINTUART
-	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
-	for (int i = 0; i < 4; i++) {
-		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
-	}
-	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
-	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
-	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
-	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
-		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
-	}
-	printf("\n");
-#endif
+	pthread_mutex_unlock(&vrpth_SendUart);
 }
 

@@ -40,9 +40,11 @@ static uint16_t Percent2ParamCCT(uint8_t percent) {
 static uint16_t Percent2ParamDIM(uint8_t percent) {
 	return ((percent * 65535) / 100);
 }
-//static uint16_t Percent2ParamHSL(uint8_t percent) {
-//	return ((percent * 65535) / 100);
-//}
+#if 0
+static uint16_t Percent2ParamHSL(uint8_t percent) {
+	return ((percent * 65535) / 100);
+}
+#endif
 
 static uint16_t GetTransition(uint16_t parTime) {
 	uint16_t transition;
@@ -80,7 +82,14 @@ static void Send_Uart(char *msg) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("UART")) {
 				string uart_Str = data["UART"].GetString();
-				/*Get array uart*/
+				char * uartConvertChar = new char[uart_Str.length() +1];
+				strcpy(uartConvertChar, uart_Str.c_str());
+				uint8_t uartArray[48] = {0};
+				for (int i =0; i < (int)(strlen(uartConvertChar)/3 +1); i++){
+					sscanf((char *)uartConvertChar + i*3,"%2x" ,&uartArray[i]);
+				}
+				bufferDataUart.push_back(AssignData(uartArray,(strlen(uartConvertChar)/3 +1)));
+				delete uartConvertChar;
 			}
 		}
 	}
@@ -97,6 +106,7 @@ static void Scan(char *msg) {
 		pthread_create(&vrpth_ProvisionThread,NULL, ProvisionThread, NULL);
 	}
 }
+
 static void Stop(char *msg) {
 	Document document;
 	document.Parse(msg);
@@ -104,10 +114,7 @@ static void Stop(char *msg) {
 		vrb_IsProvision = false;
 		slog_print(SLOG_INFO, 1, "<provision>Provision stop");
 		MODE_PROVISION=false;
-//		ControlMessage(3, OUTMESSAGE_ScanStop);
-//		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
-		uartSendDev_t temp = AssignData(OUTMESSAGE_ScanStop,3);
-		ring_push_head((ringbuffer_t* )&bufferDataUart, (void *)&temp);
+		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
 		//pthread_cancel(tmp);
 		flag_selectmac     = false;
 		flag_getpro_info   = false;
@@ -128,16 +135,12 @@ static void Stop(char *msg) {
 	json.String("STOP");
 	json.EndObject();
 
-	cout << sendToDB.GetString() << endl;
+//	cout << sendToDB.GetString() << endl;
 	string s = sendToDB.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
-	delete sendT;
+	char *msgSend = new char[s.length() + 1];
+	strcpy(msgSend, s.c_str());
+	mqtt_send(mosq,(char*) TP_PUB, (char*)msgSend);
+	delete msgSend;
 }
 
 static void Update(char *msg) {
@@ -150,10 +153,7 @@ static void Update(char *msg) {
 				const Value &deviceUnicast = data["DEVICE_UNICAST_ID"];
 				for (SizeType i = 0; i < deviceUnicast.Size(); i++) {
 					uint16_t adr = deviceUnicast[i].GetInt();
-					FunctionPer(HCI_CMD_GATEWAY_CMD, UpdateLight_typedef, adr,
-							NULL8, NULL8, NULL16, NULL16, NULL16, NULL16,
-							NULL16, NULL16, NULL16, NULL16, 12);
-					cout << "index: " << i << endl;
+					CmdUpdateLight(HCI_CMD_GATEWAY_CMD, adr, 12);
 				}
 			}
 		}
@@ -569,7 +569,7 @@ static void CallModeRgb(char *msg) {
 					adr = adrObj[i].GetInt();
 					FunctionPer(HCI_CMD_GATEWAY_CMD, CallModeRgb_vendor_typedef,
 							adr, NULL16, srgbId, NULL16, NULL16, NULL16, NULL16,
-							NULL16, NULL16, NULL16, NULL16, 21);
+							NULL16, NULL16, NULL16, NULL16, 15);
 				}
 			}
 		}
@@ -639,6 +639,7 @@ static void SaveGw(char *msg) {
 		}
 	}
 }
+
 #define NUM_BUTTONREMOTE			6
 string arrayButtonRemote[NUM_BUTTONREMOTE] = {"BUTTON_1","BUTTON_2","BUTTON_3","BUTTON_4","BUTTON_5","BUTTON_6"};
 static int ButtonId(string bt) {
@@ -1421,14 +1422,12 @@ void JsonHandle(char * data) {
 	if (document.IsObject()) {
 		if (document.HasMember("CMD")) {
 			string cmd = document["CMD"].GetString();
-#if 1
 			for (int i = 0; i < MAX_FUNCTION; i++) {
 				if (cmd.compare(listCommandMQTT[i].commandStr) == 0) {
 					listCommandMQTT[i].funcProcess(data);
 					break;
 				}
 			}
-#endif
 		}
 	}
 	Document objDelete;

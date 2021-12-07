@@ -3,7 +3,6 @@
 #include "../Mqtt/Mqtt.hpp"
 #include "../ProcessUart/OpCode.h"
 
-
 #define LENGTH_ADDSCENE 			20
 #define LENGTH_DELSCENE				19
 #define LENGTH_EDIT_ICON			20
@@ -20,11 +19,9 @@
 using namespace std;
 using namespace rapidjson;
 
-pthread_mutex_t	SCREENTOUCH_keyLockMutex = PTHREAD_MUTEX_INITIALIZER;
-
-uint16_t cmd = HCI_CMD_GATEWAY_CMD;
-uint8_t st_parRetry_cnt = 0x00;
-uint8_t st_parRsp_Max = 0x00;
+static uint16_t cmd = HCI_CMD_GATEWAY_CMD;
+static uint8_t st_parRetry_cnt = 0x00;
+static uint8_t st_parRsp_Max = 0x00;
 
 static void initDataSend()
 {
@@ -221,30 +218,14 @@ void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_
 		st_DefaultOnOff(adr,sceneId);
 		cmdLength = LENGTH_DEFAULT_ONOFF;
 	}
-
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = 500;
-	pthread_mutex_trylock(&keyBufferUartSend);
-	ring_push_head((ringbuffer_t *)&bufferDataUart, (void *)&vrts_DataUartSend);
-//	bufferDataUart.push_back(vrts_DataUartSend);
+	pthread_mutex_trylock(&vrpth_SendUart);
+	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);
-	pthread_mutex_unlock(&keyBufferUartSend);
-
-#if !PRINTUART
-	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
-	for (int i = 0; i < 4; i++) {
-		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
-	}
-	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
-	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
-	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
-	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
-		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
-	}
-	printf("\n");
-#endif
+	pthread_mutex_unlock(&vrpth_SendUart);
 }
 
 
@@ -266,13 +247,9 @@ void RspScreenTouchStatus(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 
 }
@@ -296,13 +273,9 @@ void RspScreenTouchAddScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -326,13 +299,9 @@ void RspScreenTouchEditScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -354,13 +323,9 @@ void RspScreenTouchDelScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -388,13 +353,9 @@ void RspScreenTouchSetWeatherOut(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -425,13 +386,9 @@ void RspScreenTouchWeatherIndoor(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -457,13 +414,9 @@ void RspScreenTouchTime(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -491,13 +444,9 @@ void RspScreenTouchDate(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -515,13 +464,9 @@ void RspScreenTouchDelAllScene(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -541,13 +486,9 @@ void RspScreenTouchDefaultOnOff(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -569,13 +510,9 @@ void RspScreenTouchStatusOnOffGroup(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -593,13 +530,9 @@ void RequestTime(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -617,15 +550,10 @@ void RequestTempHum(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
-	char * sendT = new char[s.length()+1];
+	char *sendT = new char[s.length() + 1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
-
 	int temp = ptempIndoor/10;
 	int hum = phumIndoor/10;
 	if((ptempIndoor % 10) >=5 ){
@@ -634,6 +562,7 @@ void RequestTempHum(TS_GWIF_IncomingData *data) {
 	if((phumIndoor % 10) >= 5){
 		hum++;
 	}
+
 //	cout <<"---> Temp: " << ptempIndoor << endl;
 //	cout <<"---> Hum: " << phumIndoor << endl;
 

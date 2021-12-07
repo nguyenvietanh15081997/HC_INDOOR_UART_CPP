@@ -31,6 +31,7 @@ extern bool flag_done;
 extern bool flag_setpro;
 extern bool flag_admitpro;
 extern bool flag_checkadmitpro;
+extern bool timeoutScan;
 
 extern bool flag_set_type;
 extern bool flag_checkHB;

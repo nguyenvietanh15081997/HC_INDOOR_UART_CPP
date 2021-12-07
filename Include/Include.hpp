@@ -14,7 +14,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include "../ProcessUart/RingBuffer.h"
 #include "../rapidjson/document.h"
 #include "../rapidjson/prettywriter.h"
 
@@ -27,30 +26,12 @@ extern bool 				gvrb_AddGroupLight;
 extern bool					gvrb_Provision;
 extern uint16_t 			gSceneIdDel;
 
-#define SIZE_BUF_UARTSEND	4096
-extern ringbuffer_t 		bufferDataUart;
-extern pthread_mutex_t 		keyBufferUartSend;
-
-
-extern ringbuffer_t         bufferSendMqtt;
-extern pthread_mutex_t 		keyBufferSendMqtt;
-
 extern int ptempIndoor;
 extern uint16_t phumIndoor;
 extern uint16_t ppm25;
+extern pthread_mutex_t vrpth_SendUart;
 
-/*
- * buffer send mqtt
- */
-#define MAX_CHAR_MQTT		2048
-#define MAX_BUFFEMQTTSEND	2048
-typedef struct dataSendMqtt{
-	char dataSendMqtt[MAX_CHAR_MQTT];
-}dataSendMqtt_t;
-
-/*
- * frame data to control device
- */
+/*frame data to control device*/
 typedef struct{
 	uint8_t HCI_CMD_GATEWAY[2];// CMD
 	uint8_t opCode00[4];   // 00 00 00 00
@@ -62,10 +43,7 @@ typedef struct{
 } cmdcontrol_t;
 extern cmdcontrol_t 	vrts_CMD_STRUCTURE;
 
-/*
- * frame data use opcode vendor
- */
-#if 0
+/*frame data use opcode vendor*/
 typedef struct{
 	uint8_t HCI_CMD_GATEWAY[2];// CMD
 	uint8_t opCode00[4];   // 00 00 00 00
@@ -76,11 +54,7 @@ typedef struct{
 	uint8_t status_cmd[2]; // status cmd
 	uint8_t para[67];
 } cmdcontrol_vendor;
-#endif
 
-/*
- * Frame data uart rsp
- */
 #define MESSAGE_MAXLENGTH		(61)
 typedef struct IncomingData{
 	uint8_t 	Length[2];
@@ -88,18 +62,25 @@ typedef struct IncomingData{
 	uint8_t		Message[MESSAGE_MAXLENGTH];
 } TS_GWIF_IncomingData;
 
-/*
- * Item buffer data uart cmd
- *
- * length: num byte send
- * datauart: data send
- * timeWait: time wait to send dataUart
- */
 typedef struct uartSendDev{
 	uint16_t 		length;
 	cmdcontrol_t 	dataUart;
 	uint64_t 		timeWait;
 }uartSendDev_t;
+
+typedef struct uartSendDev_Vendor{
+	uint8_t 			length;
+	cmdcontrol_vendor 	dataUart;
+	long 				timeWait;
+}uartSendDev_Vendor_t;
+
+#define MAX_MSG_MQTT 		512
+typedef struct bufferDataMqtt{
+	char dataMqtt[MAX_MSG_MQTT];
+}bufferDataMqtt_t;
+
+extern deque<uartSendDev_t> bufferDataUart;
+extern deque<uartSendDev_t> bufferUartUpdate;
 
 uartSendDev_t AssignData(uint8_t *data,int length);
 

@@ -85,14 +85,6 @@ typedef struct powerStatus{
 
 extern uint16_t  value_Lux;
 
-/*
- * Calculate lux of lightsensor
- *
- * @param rsp_lux two byte lux
- * @return lux value calculated
- */
-unsigned int CalculateLux(unsigned int rsp_lux);
-
 void RspDoorSensorAddScene(TS_GWIF_IncomingData *data);
 
 void RspDoorSensorDelScene(TS_GWIF_IncomingData *data);

@@ -1,19 +1,8 @@
-/*
- * Light.h build frames data to control device
- * - main function is void FunctionPer()
- * - just add the appropriate parameters into void FunctionPer()
- * -
- */
 #ifndef BUILDCMDUART_HPP_
 #define BUILDCMDUART_HPP_
 
 #include "../Include/Include.hpp"
 #include "../ProcessUart/OpCode.h"
-
-extern bool flag_saveGW;
-extern bool flag_typeDEV;
-extern bool flag_heartbeat;
-
 
 /*header set, get, ask typed device*/
 #define HEADER_TYPE_SET  	(0x0001)
@@ -230,6 +219,11 @@ typedef enum{
 } functionTypeDef;
 
 /*
+ * Update light
+ */
+void CmdUpdateLight(uint16_t cmd, uint16_t adr, uint16_t cmdLength);
+
+/*
  * Main function: build frame data control node, and transmit uart
  * Enter the appropriate parameters to specify the control command
  * When built frame data control, function transmit uart
@@ -287,5 +281,4 @@ void Function_Vendor(uint16_t cmd,\
 		uint16_t 	transition_par_t,\
 		uint16_t 	cmdLength
 		);
-
 #endif 

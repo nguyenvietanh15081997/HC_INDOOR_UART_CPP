@@ -38,8 +38,6 @@ int GetDBString(void *NotUsed, int argc, char **argv, char **azColName) {
  * OpenDB(): open and query to db
  */
 int OpenDB(char *sqlQuery, bool getString){
-	//open DB
-	//puts("Open db");
 	sqlite3 *DB;
 	char * msgError;
 	int open = 0;
@@ -47,9 +45,10 @@ int OpenDB(char *sqlQuery, bool getString){
 		open = sqlite3_open("/root/rd.Sqlite",&DB);
 	}while(open != SQLITE_OK);
 
-	//sqlite exec
 	if(getString){
-		while(sqlite3_exec(DB, sqlQuery, GetDBString, 0, &msgError) != 0){}
+		if(sqlite3_exec(DB, sqlQuery, GetDBString, 0, &msgError) != SQLITE_OK){
+			slog_print(SLOG_INFO,1,"get deviceKey");
+		}
 	}
 
 	sqlite3_close(DB);
@@ -60,7 +59,6 @@ void GetDevicekey(){
 	char *getDevKey = "SELECT DeviceKey FROM Device;";
 	OpenDB(getDevKey,true);
 }
-
 
 int main() {
 	slog_init("logfile", SLOG_FLAGS_ALL, 1);

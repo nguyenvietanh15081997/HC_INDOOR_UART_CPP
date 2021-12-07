@@ -29,7 +29,7 @@ static bool 				message_Update = false;
 
 int serial_port;
 
-char* ToChar(cmdcontrol_t data) {
+static char* ToChar(cmdcontrol_t data) {
 	char * temp = (char *)(&data.HCI_CMD_GATEWAY[0]);
 	return temp;
 }
@@ -74,7 +74,7 @@ static void Uart_Init(){
 	}
 }
 
-void GWIF_Init (void){
+static void GWIF_Init (void){
 	ring_init(&vrts_ringbuffer_Data, RINGBUFFER_LEN, sizeof(uint8_t));
 	Uart_Init();
 	vrts_GWIF_IncomeMessage = (TS_GWIF_IncomingData *)vrsc_GWIF_TempBuffer;
@@ -89,6 +89,8 @@ static uint64_t getMillisOfDay(){
 
 	return millis;
 }
+
+#if 0
 static uint16_t getSecondDay(){
 	uint64_t second;
 	struct timeval timeCurrent;
@@ -97,51 +99,91 @@ static uint16_t getSecondDay(){
 	second = (timeCurrent.tv_sec);
 	return second;
 }
+#endif
 
-static uint64_t t1, t2;
-void GWIF_WriteMessage(void) {
-	pthread_mutex_trylock(&keyBufferUartSend);
-	if (bufferDataUart.count) {
-		uartSendDev_t data;
-		ring_pop_tail((ringbuffer_t*) &bufferDataUart, (void*) &data);
+static void LogDataUart(bool hasRsp, uint8_t length, void *data){
+	unsigned char buffer[length+1];
+	memcpy(buffer,data,length);
+	unsigned char temp[10] = {0};
+	unsigned char dataLog[200] = {0};
+	for(int i = 0; i < length; i++){
+		sprintf((char *)temp, "%02x ",buffer[i]);
+		strcat((char *)dataLog,(char *)temp);
+	}
+	if(hasRsp){
+		slog_print(SLOG_TRACE, 1, "<uart>rsp:%s",dataLog);
+	}else {
+		slog_print(SLOG_TRACE, 1, "<uart>cmd:%s",dataLog);
+	}
+}
+
+static uint64_t t1, t2, t3, t4;
+static void GWIF_WriteMessage(void) {
+	pthread_mutex_trylock(&vrpth_SendUart);
+	if (bufferDataUart.size()) {
+		uartSendDev_t data = bufferDataUart.front();
 		t1 = getMillisOfDay();
+
 		if ((t1 - t2) >= data.timeWait) {
 			write(serial_port, ToChar(data.dataUart), data.length);
 			tcdrain(serial_port);
-#if PRINTUART
-			uint8_t tempUart[200] = { 0 };
-			memcpy((char*) tempUart, (char*) &data.dataUart.HCI_CMD_GATEWAY[0],
-					data.length);
-			uint8_t temp[4] = { 0 };
-			uint8_t bufferLog[200] = { 0 };
-			for (int j = 0; j < data.length; j++) {
-				sprintf((char*) temp, "%02x ", tempUart[j]);
-				strcat((char*) bufferLog, (char*) temp);
-			}
-			slog_print(SLOG_TRACE, 1, "<cmd>%s", bufferLog);
-#endif
+			bufferDataUart.pop_front();
+			bufferDataUart.shrink_to_fit();
 			t2 = t1;
+
+			LogDataUart(0, data.length, (void*) &data.dataUart.HCI_CMD_GATEWAY[0]);
+
+			uint16_t opcodeCmd = data.dataUart.opCode[0] | (data.dataUart.opCode[1] << 8);
+			switch (opcodeCmd){
+			case SCENE_STORE:
+				gvrb_AddSceneLight = true;
+				break;
+			case SCENE_DEL:
+				gvrb_AddSceneLight = false;
+				gSceneIdDel = data.dataUart.para[0] | (data.dataUart.para[1] << 8);
+				break;
+			case CFG_MODEL_SUB_ADD:
+				gvrb_AddGroupLight = true;
+				break;
+			case CFG_MODEL_SUB_DEL:
+				gvrb_AddGroupLight = false;
+				break;
+			}
+		}
+	} else if (bufferUartUpdate.size() && !gvrb_Provision){
+		uartSendDev_t dataUpdate = bufferUartUpdate.front();
+		t3 = getMillisOfDay();
+		if((t3 - t4) >= dataUpdate.timeWait) {
+			write(serial_port, ToChar(dataUpdate.dataUart), dataUpdate.length);
+			tcdrain(serial_port);
+			bufferUartUpdate.pop_front();
+			bufferUartUpdate.shrink_to_fit();
+			t4 = t3;
+
+			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
 		}
 	}
-	pthread_mutex_unlock(&keyBufferUartSend);
+	pthread_mutex_unlock(&vrpth_SendUart);
 }
 
 static uint8_t read_buf[256];
 static int num_bytes;
 static int num_count2Push;
+static uint16_t countReadUart = 0;
 
-void GWIF_Read2Buffer (void){
+static void GWIF_Read2Buffer (void){
 	if(num_bytes == 0){
-		if(Pro_startCount){
-			Pro_startCount = false;
-			Timeout_CheckDataBuffer1 = getSecondDay();
+		countReadUart++;
+		if(countReadUart == 1000){
+			timeoutScan = true;
+			countReadUart = 0;
 		}
 		num_bytes = read(serial_port, &read_buf,128);
 		num_count2Push = 0;
 		#if 1
 			if(num_bytes > 0){
-				Timeout_CheckDataBuffer1 = getSecondDay();
 				scanNotFoundDev = 0;
+				countReadUart = 0;
 			}
 		#endif
 
@@ -160,7 +202,7 @@ void GWIF_Read2Buffer (void){
 	}
 }
 
-void GWIF_CheckData()
+static void GWIF_CheckData()
 {
 	unsigned char vrui_Count;
 	if(vrts_ringbuffer_Data.count >= 1){
@@ -245,7 +287,7 @@ typedef struct processRsp{
 	cb_rsp_function_t 	rspFuncProcess;
 } proccessRsp_t;
 
-#define MAX_FUNCTION_RSP			9
+#define MAX_FUNCTION_RSP			10
 proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
 		{G_ONOFF_STATUS,					RspOnoff},
 		{LIGHT_CTL_TEMP_STATUS,				RspCCT},
@@ -256,6 +298,7 @@ proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
 		{SCENE_STATUS,						RspCallScene},
 		{G_BATTERY_STATUS,					RspPowerRemoteStatus},
 		{NODE_RESET_STATUS,					RspResetNode},
+		{LIGHTNESS_LINEAR_STATUS,			RspCallModeRgb}
 };
 
 typedef struct processRspVendor{
@@ -263,14 +306,13 @@ typedef struct processRspVendor{
 	cb_rsp_function_t 	rspFuncVendorProcess;
 } proccessRspVendor_t;
 
-/*TODO*/
-#define MAX_FUNCTIONVENDOR_RSP			24
+#define MAX_FUNCTIONVENDOR_RSP			23
 proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_TYPE_ASK,						RspTypeDevice},
 		{HEADER_TYPE_SET,						RspTypeDevice},
 		{HEADER_TYPE_SAVEGW,					RspSaveGw},
 
-		{HEADER_SCENE_CALL_MODE,				RspCallModeRgb},
+//		{HEADER_SCENE_CALL_MODE,				RspCallModeRgb},
 //		{HEADER_SCENE_DEL,			   			RspDelSceneRgb},
 //		{HEADER_SCENE_SET,						RspAddSceneRgb},
 //		{HEADER_SCENE_CALL_SCENE_RGB,			RspCallSceneRgb},
@@ -302,21 +344,12 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 //		{HEADER_ASK_STATUS_CURTAIN,				RspCurtainStatus},
 };
 
-int GWIF_ProcessData (void)
+static int GWIF_ProcessData (void)
 {
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
-#if PRINTUART
-		if(vrts_GWIF_IncomeMessage->Message[0] != HCI_GATEWAY_CMD_UPDATE_MAC){
-			uint8_t temp[4] = { 0 };
-			uint8_t bufferLog[200] = { 0 };
-			for(int n = 0; n<(vrui_GWIF_LengthMeassge-1);n++){
-				sprintf((char *)temp,"%02x ",vrts_GWIF_IncomeMessage->Message[n]);
-				strcat((char *)bufferLog,(char *)temp);
-			}
-			slog_print(SLOG_TRACE,1,"<rsp>length: %d, tscript: %x, message: %s",vrui_GWIF_LengthMeassge,vrts_GWIF_IncomeMessage->Opcode,bufferLog);
-		}
-#endif
+
+		LogDataUart(1, (vrui_GWIF_LengthMeassge + 2), (void*) &vrts_GWIF_IncomeMessage->Length[0]);
 
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC)) {
@@ -350,6 +383,7 @@ int GWIF_ProcessData (void)
 							vrts_GWIF_IncomeMessage->Message[23],
 							vrts_GWIF_IncomeMessage->Message[24],
 							vrts_GWIF_IncomeMessage->Message[25]);
+					slog_print(SLOG_INFO,1,"%s",(char *)PRO_uuid);
 					flag_selectmac = true;
 					flag_check_select_mac = false;
 					StopCountCheckTimeout();
@@ -472,6 +506,17 @@ int GWIF_ProcessData (void)
 						}
 					}
 				}
+				if (vrts_GWIF_IncomeMessage->Message[5] == RD_OPCODE_SCENE_RSP) {
+					if (VENDOR_ID == (vrts_GWIF_IncomeMessage->Message[6] | (vrts_GWIF_IncomeMessage->Message[7] << 8))) {
+						uint16_t headVendor = vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8);
+						if (headVendor == ST_HEADER_REQUEST_TIME){
+							RequestTime(vrts_GWIF_IncomeMessage);
+						}
+						else if (headVendor == ST_HEADER_REQUEST_TEMP_HUM){
+							RequestTempHum(vrts_GWIF_IncomeMessage);
+						}
+					}
+				}
 			}
 		}
 		else {
@@ -522,14 +567,14 @@ int GWIF_ProcessData (void)
 }
 
 void* GWINF_Thread(void *vargp) {
-	slog_print(SLOG_INFO, 1, "thread uart start");
+	slog_print(SLOG_INFO, 1, "Thread uart start");
 	GWIF_Init();
 	while (1) {
 		GWIF_WriteMessage();
 		GWIF_Read2Buffer();
 		GWIF_CheckData();
 		GWIF_ProcessData();
-		usleep(20000);
+		usleep(10000);
 	}
 	return NULL;
 }

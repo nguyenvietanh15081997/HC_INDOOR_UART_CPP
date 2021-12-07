@@ -11,22 +11,6 @@ using namespace rapidjson;
 
 #define MASK_15LSB     0x7FFF;
 
-//unsigned int CalculateLux(unsigned int rsp_lux) {
-//	unsigned int lux_LSB = 0;
-//	unsigned char lux_MSB = 0;
-//	unsigned int lux_Value = 0;
-//	unsigned int pow = 1;
-//	unsigned char i;
-//	lux_LSB = rsp_lux & 0x0FFF;
-//	lux_MSB = ((rsp_lux >> 12) & 0x0F);
-//	//Lux_Value = 0.01 * pow(2,Lux_MSB) * Lux_LSB; //don't use
-//	for (i = 0; i < lux_MSB; i++) {
-//		pow = pow * 2;
-//	}
-//	lux_Value = 0.01 * pow * lux_LSB;
-//	return lux_Value;
-//}
-
 void RspDoorSensorAddScene(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	doorRspScene_t vrts_DoorRspScene;
@@ -50,13 +34,9 @@ void RspDoorSensorAddScene(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -77,13 +57,9 @@ void RspDoorSensorDelScene(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -105,13 +81,9 @@ void RspDoorHangOn(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -133,13 +105,9 @@ void RspDoorStatus(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -168,13 +136,9 @@ void RspPmSensorTempHum(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -200,13 +164,9 @@ void RspPmSensor(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -241,13 +201,9 @@ void RspTempHumSensor(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -276,13 +232,9 @@ void RspPirSenSor(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -318,13 +270,9 @@ void RspLightSensor(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -341,19 +289,15 @@ void RspSmoke(TS_GWIF_IncomingData *data) {
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
 			json.Key("SMOKE_VALUE");json.Int(vrts_Smoke.smoke);
-			json.Key("LOW_BATTERY");json.Int(!vrts_Smoke.battery);
+			json.Key("LOW_BATTERY");json.Int(vrts_Smoke.battery);
 		json.EndObject();
 	json.EndObject();
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -404,13 +348,9 @@ void RspPir_LightAddScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -431,13 +371,9 @@ void RspPir_LightDelScene(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -457,13 +393,9 @@ void RspPirTimeAction(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
 
@@ -484,12 +416,8 @@ void RspPowerStatusSensor(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	dataSendMqtt_t mqttSend;
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
-	memcpy((char*)&mqttSend.dataSendMqtt[0], sendT, s.length() + 1);
-	pthread_mutex_lock(&keyBufferSendMqtt);
-	ring_push_head(&bufferSendMqtt,(void *) &mqttSend);
-	pthread_mutex_unlock(&keyBufferSendMqtt);
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
 }
