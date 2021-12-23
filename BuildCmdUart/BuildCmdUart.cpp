@@ -1026,6 +1026,7 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 		SendTimeForScreenT(adr, type_hours, attrubute_minute);
 	}
 	else if(Func_vendor == SaveGateway_vendor_typedef){
+		vrts_CMD_STRUCTURE.retry_cnt = 0x01;
 		SaveGateway(adr);
 		timeWait = 0;
 	}

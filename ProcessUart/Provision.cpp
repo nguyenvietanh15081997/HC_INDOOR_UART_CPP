@@ -104,6 +104,7 @@ static void Pro_BindingAll(void) {
 	timeCurrent = time(NULL);
 }
 static void Pro_SaveGate(void) {
+	sleep(1);
 	Function_Vendor(HCI_CMD_GATEWAY_CMD, SaveGateway_vendor_typedef,
 			adr_Provision, NULL16, NULL8, NULL8, NULL8, NULL16, NULL16,
 			NULL16, NULL16, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
