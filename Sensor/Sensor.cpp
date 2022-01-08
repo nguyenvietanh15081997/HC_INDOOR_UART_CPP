@@ -213,10 +213,10 @@ void RspPirSenSor(TS_GWIF_IncomingData *data) {
 	vrts_PirRsp.pir = data->Message[8] | (data->Message[9] << 8);
 	vrts_PirRsp.sceneId = data->Message[10] | (data->Message[11] << 8);
 	if(vrts_PirRsp.sceneId){
-		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
-				NULL8, NULL8, NULL16, NULL16, vrts_PirRsp.sceneId,
-				NULL16, NULL16, NULL16, NULL16,
-				0, 17);
+//		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
+//				NULL8, NULL8, NULL16, NULL16, vrts_PirRsp.sceneId,
+//				NULL16, NULL16, NULL16, NULL16,
+//				0, 17);
 	}
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);

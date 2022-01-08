@@ -57,7 +57,7 @@ int OpenDB(char *sqlQuery, bool getString){
 }
 
 void GetDevicekey(){
-	char *getDevKey = "SELECT DeviceKey FROM Device;";
+	char *getDevKey = "SELECT DISTINCT DeviceKey FROM Device WHERE DeviceKey IS NOT NULL;";
 	OpenDB(getDevKey,true);
 }
 
@@ -67,6 +67,7 @@ int main() {
 	slog_config_set(&slgCfg);
 
 	GetDevicekey();
+
 	slog_print(SLOG_INFO,1,"device key: %s",PRO_deviceKey);
 	pthread_create(&vrpth_MqttThread, NULL, MQTT_Thread, NULL);
 	pthread_create(&vrpth_UartReadThread, NULL, GWINF_Thread, NULL);

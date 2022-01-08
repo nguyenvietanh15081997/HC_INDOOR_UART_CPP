@@ -890,12 +890,26 @@ static void WeatherIndoorScreenTouch(char *msg) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				hum = data["HUMIDITY"].GetInt();
 				temp = data["TEMPERATURE"].GetInt();
-				int tempSet = temp;
-				if(temp < 0){
-					tempSet = (temp)*(-1) | 0x8000;
+				bool checkTemp = false;
+				if (temp < 0) {
+					checkTemp = true;
+					temp = temp * (-1);
 				}
+				int tempSet = temp / 10;
+				if (temp % 10 >= 5) {
+					tempSet++;
+				}
+				if (checkTemp) {
+					tempSet = tempSet | 0x8000;
+				}
+
+				int humSet = hum / 10;
+				if (hum % 10 >= 5) {
+					humSet++;
+				}
+
 				SendData2ScreeTouch(st_enum_weatherIndoor, adr, NULL16, NULL8,
-						NULL8, tempSet, hum, pm25, NULL8, NULL8, NULL8, NULL8,
+						NULL8, tempSet, humSet, pm25, NULL8, NULL8, NULL8, NULL8,
 						NULL8, NULL8, NULL8);
 			}
 		}

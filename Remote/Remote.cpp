@@ -29,10 +29,10 @@ void RspRemoteStatus(TS_GWIF_IncomingData *data){
 	vrts_RemoteRsp.modeID	= data->Message[9];
 	vrts_RemoteRsp.sceneId 	= data->Message[10] | (data->Message[11] << 8);
 	if(vrts_RemoteRsp.sceneId){
-		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
-				NULL8, NULL8, NULL16, NULL16, vrts_RemoteRsp.sceneId,
-				NULL16, NULL16, NULL16, NULL16,
-				0, 17);
+//		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
+//				NULL8, NULL8, NULL16, NULL16, vrts_RemoteRsp.sceneId,
+//				NULL16, NULL16, NULL16, NULL16,
+//				0, 17);
 	}
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);

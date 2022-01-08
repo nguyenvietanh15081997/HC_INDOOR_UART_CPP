@@ -236,10 +236,10 @@ void RspScreenTouchStatus(TS_GWIF_IncomingData * data){
 	ts_Status_St vrts_Status;
 	vrts_Status.sceneId = data->Message[9] | (data->Message[10] << 8);
 	if(vrts_Status.sceneId){
-		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
-				NULL8, NULL8, NULL16, NULL16, vrts_Status.sceneId,
-				NULL16, NULL16, NULL16, NULL16,
-				0, 17);
+//		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
+//				NULL8, NULL8, NULL16, NULL16, vrts_Status.sceneId,
+//				NULL16, NULL16, NULL16, NULL16,
+//				0, 17);
 	}
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
@@ -340,9 +340,9 @@ void RspScreenTouchSetWeatherOut(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	ts_weatherOut vrts_WeatherOut;
 	vrts_WeatherOut.status = data->Message[12];
-	vrts_WeatherOut.temp = (data->Message[10] | (data->Message[11] << 8)) & MASK_14LSB;
+	vrts_WeatherOut.temp = ((data->Message[10] << 8) | data->Message[11]) & MASK_14LSB;
 	int temp_json = vrts_WeatherOut.temp;
-	uint16_t check = (data->Message[10] | (data->Message[11] << 8)) & MASK_1MSB;
+	uint16_t check = ((data->Message[10] << 8) | data->Message[11]) & MASK_1MSB;
 	if(check){
 		temp_json = (-1) * temp_json;
 	}
@@ -561,20 +561,20 @@ void RequestTempHum(TS_GWIF_IncomingData *data) {
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 	delete sendT;
-	int temp = ptempIndoor/10;
-	int hum = phumIndoor/10;
-	if((ptempIndoor % 10) >=5 ){
-		temp++;
-	}
-	if((phumIndoor % 10) >= 5){
-		hum++;
-	}
+//	int temp = ptempIndoor/10;
+//	int hum = phumIndoor/10;
+//	if((ptempIndoor % 10) >=5 ){
+//		temp++;
+//	}
+//	if((phumIndoor % 10) >= 5){
+//		hum++;
+//	}
 
 //	cout <<"---> Temp: " << ptempIndoor << endl;
 //	cout <<"---> Hum: " << phumIndoor << endl;
 
-	SendData2ScreeTouch(st_enum_weatherIndoor, adr, 0, 0, 0, temp,
-			hum, ppm25, 0, 0, 0, 0, 0, 0, 0);
+//	SendData2ScreeTouch(st_enum_weatherIndoor, adr, 0, 0, 0, temp,
+//			hum, ppm25, 0, 0, 0, 0, 0, 0, 0);
 }
 
 

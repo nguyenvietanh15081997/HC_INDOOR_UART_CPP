@@ -306,6 +306,7 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	}
 	else if(Func == ControlOnoff_NoAck_typedef){
 		CmdOnoff_NoAck(unicastAdr,parStatusOnOff,transition_par_t);
+		timeWait = 900;
 	}
 	else if (Func == SetTimePoll_typedef){
 		CmdSetTimePoll(unicastAdr, parTimePoll);
@@ -316,12 +317,14 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	}
 	else if(Func == CCT_Set_NoAck_typedef){
 		CmdCCT_Set_NoAck(unicastAdr,parCCT,transition_par_t);
+		timeWait = 900;
 	}
 	else if (Func == Lightness_Set_typedef){
 		CmdLightness_Set(unicastAdr, parLightness,transition_par_t);
 	}
 	else if(Func == Lightness_Set_NoAck_typedef){
 		CmdLightness_Set_NoAck(unicastAdr, parLightness,transition_par_t);
+		timeWait = 900;
 	}
 //	else if (Func == UpdateLight_typedef){
 //		CmdUpdateLight(unicastAdr);
