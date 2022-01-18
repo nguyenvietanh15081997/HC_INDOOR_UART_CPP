@@ -25,6 +25,7 @@ extern bool 				gvrb_AddSceneLight;
 extern bool 				gvrb_AddGroupLight;
 extern bool					gvrb_Provision;
 extern uint16_t 			gSceneIdDel;
+extern bool 				startProcessRoom ;
 
 extern int ptempIndoor;
 extern uint16_t phumIndoor;

@@ -4,12 +4,12 @@
 #include "../Sensor/Sensor.hpp"
 #include "string.h"
 
-#define TIMEWAIT_UPDATE		1000
+#define TIMEWAIT_UPDATE		2000
 #define TIMEWAIT			500
-#define TIMECONFIGROOM  	600
+#define TIMECONFIGROOM  	900
 #define TIMEWAIT_REMOTE		600
 
-static uint8_t parRetry_cnt = 0x02;
+static uint8_t parRetry_cnt = 0x00;
 static uint8_t parRsp_Max = 0x00;
 static uint8_t parFuture = 0;
 
@@ -296,10 +296,13 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		gvrb_AddGroupLight = true;
 		CmdAddGroup(unicastAdr, adrGroup);
 		timeWait = TIMECONFIGROOM;
+		vrts_CMD_STRUCTURE.retry_cnt = 0;
 	}
 	else if(Func == DelGroup_typedef){
 		gvrb_AddGroupLight = false;
 		CmdDelGroup(unicastAdr, adrGroup);
+		timeWait = TIMECONFIGROOM;
+		vrts_CMD_STRUCTURE.retry_cnt = 0;
 	}
 	else if(Func == ControlOnOff_typedef){
 		CmdControlOnOff(unicastAdr,parStatusOnOff,transition_par_t);
@@ -333,10 +336,13 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		gSceneIdDel = parSenceId;
 		CmdAddSence(unicastAdr, parSenceId,0);
 		timeWait = TIMECONFIGROOM;
+		vrts_CMD_STRUCTURE.retry_cnt = 0;
 	}
 	else if(Func == DelSence_typedef){
 		gSceneIdDel = parSenceId;
 		CmdDelSence(unicastAdr, parSenceId);
+		timeWait = TIMECONFIGROOM;
+		vrts_CMD_STRUCTURE.retry_cnt = 0;
 	}
 	else if(Func == CallSence_typedef){
 		CmdCallSence(unicastAdr,parSenceId,0,transition_par_t);

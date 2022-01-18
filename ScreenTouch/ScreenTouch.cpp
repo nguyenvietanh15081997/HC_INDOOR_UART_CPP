@@ -178,6 +178,8 @@ static void st_DefaultOnOff(uint16_t adrSt,uint16_t groupId){
 	vrts_CMD_STRUCTURE.para[5] = (groupId >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[6] = groupId & 0xFF;
 }
+
+#define TIME_SEND_UART			1000
 void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_t iconId,
 		uint8_t statusWeather, uint16_t temp, uint16_t hum,uint16_t pm25, uint16_t years,
 		uint8_t month, uint8_t date, uint8_t day, uint8_t hours, uint8_t minute,
@@ -222,7 +224,7 @@ void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
-	vrts_DataUartSend.timeWait = 500;
+	vrts_DataUartSend.timeWait = TIME_SEND_UART;
 	pthread_mutex_trylock(&vrpth_SendUart);
 	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);

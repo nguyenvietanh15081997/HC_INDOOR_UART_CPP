@@ -17,6 +17,8 @@ bool					gvrb_Provision;
 uint16_t 				gSceneIdDel;
 pthread_mutex_t vrpth_SendUart = PTHREAD_MUTEX_INITIALIZER;
 
+bool startProcessRoom = false;
+
 int ptempIndoor;
 uint16_t phumIndoor;
 uint16_t ppm25;

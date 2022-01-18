@@ -25,7 +25,6 @@ using namespace rapidjson;
 #define TIMESLEEP       400000
 
 bool vrb_IsProvision = false;
-static bool startProcessRoom = false;
 pthread_t vrpth_ProvisionThread;
 
 typedef void (*cb_cmd_function_t)(char *msg);

@@ -118,18 +118,21 @@ static void LogDataUart(bool hasRsp, uint8_t length, void *data){
 }
 
 static uint64_t t1, t2, t3, t4;
+static uint64_t waitCmd, waitUpdate;
 static void GWIF_WriteMessage(void) {
 	pthread_mutex_trylock(&vrpth_SendUart);
 	if (bufferDataUart.size()) {
 		uartSendDev_t data = bufferDataUart.front();
 		t1 = getMillisOfDay();
 
-		if ((t1 - t2) >= data.timeWait) {
+		if ((t1 - t2) >= waitCmd) {
+			waitCmd = data.timeWait;
 			write(serial_port, ToChar(data.dataUart), data.length);
 			tcdrain(serial_port);
 			bufferDataUart.pop_front();
 			bufferDataUart.shrink_to_fit();
 			t2 = t1;
+			t4 = t1;
 
 			LogDataUart(0, data.length, (void*) &data.dataUart.HCI_CMD_GATEWAY[0]);
 
@@ -154,13 +157,15 @@ static void GWIF_WriteMessage(void) {
 	else if (bufferUartUpdate.size() && !gvrb_Provision){
 		uartSendDev_t dataUpdate = bufferUartUpdate.front();
 		t3 = getMillisOfDay();
-		if((t3 - t4) >= dataUpdate.timeWait) {
+		if((t3 - t4) >= waitUpdate) {
+			waitUpdate = dataUpdate.timeWait;
+			waitCmd = dataUpdate.timeWait;
 			write(serial_port, ToChar(dataUpdate.dataUart), dataUpdate.length);
 			tcdrain(serial_port);
 			bufferUartUpdate.pop_front();
 			bufferUartUpdate.shrink_to_fit();
 			t4 = t3;
-
+			t2 = t3;
 			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
 		}
 	}
