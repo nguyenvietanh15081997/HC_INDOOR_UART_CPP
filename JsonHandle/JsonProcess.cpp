@@ -6,6 +6,7 @@
 #include "../logging/slog.h"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 #include "../ScreenTouch/ScreenTouch.hpp"
+#include "../SwitchOnOff/SwitchOnOff.hpp"
 #include "../ProcessUart/Provision.hpp"
 #include "../Mqtt/Mqtt.hpp"
 
@@ -762,7 +763,7 @@ static void AddSceneScreenTouch( char *msg){
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				sceneId = data["SCENEID"].GetInt();
 				icon = data["ICONID"].GetInt();
-				SendData2ScreeTouch(st_enum_addscene, adr, sceneId, icon, NULL8,
+				SendData2ScreenTouch(st_enum_addscene, adr, sceneId, icon, NULL8,
 						NULL16, NULL16, NULL16, NULL8, NULL8, NULL8, NULL8,
 						NULL8, NULL8, NULL8);
 			}
@@ -784,7 +785,7 @@ static void EditIconScreenTouch(char *msg) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				sceneId = data["SCENEID"].GetInt();
 				icon = data["ICONID"].GetInt();
-				SendData2ScreeTouch(st_enum_editIcon, adr, sceneId, icon, NULL8,
+				SendData2ScreenTouch(st_enum_editIcon, adr, sceneId, icon, NULL8,
 						NULL16, NULL16, NULL16, NULL8, NULL8, NULL8, NULL8,
 						NULL8, NULL8, NULL8);
 			}
@@ -804,7 +805,7 @@ static void DelSceneScreenTouch(char *msg) {
 					&& data.HasMember("SCENEID")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				sceneId = data["SCENEID"].GetInt();
-				SendData2ScreeTouch(st_enum_delscene, adr, sceneId,
+				SendData2ScreenTouch(st_enum_delscene, adr, sceneId,
 				NULL8, NULL8, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
 				NULL8, NULL8, NULL8, NULL8);
 			}
@@ -821,7 +822,7 @@ static void DelAllSceneScreenTouch(char *msg) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
-				SendData2ScreeTouch(st_enum_DelAllScene, adr, NULL16,
+				SendData2ScreenTouch(st_enum_DelAllScene, adr, NULL16,
 				NULL8, NULL8, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
 				NULL8, NULL8, NULL8, NULL8);
 			}
@@ -840,7 +841,7 @@ static void DefaultOnOffScreenTouch(char *msg) {
 			if(data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("GROUPID")){
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				groupId = data["GROUPID"].GetInt();
-				SendData2ScreeTouch(st_enum_DefaultOnOff, adr, groupId,
+				SendData2ScreenTouch(st_enum_DefaultOnOff, adr, groupId,
 				NULL8, NULL8, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
 				NULL8, NULL8, NULL8, NULL8);
 			}
@@ -862,7 +863,7 @@ static void WeatherOutSreenTouch(char *msg) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				statusWeather = data["STATUS"].GetInt();
 				temp = data["TEMPERATURE"].GetInt();
-				SendData2ScreeTouch(st_enum_weatherOutdoor, adr,NULL16,
+				SendData2ScreenTouch(st_enum_weatherOutdoor, adr,NULL16,
 						NULL8, statusWeather, temp, NULL16,NULL16, NULL8, NULL8, NULL8, NULL8,
 						NULL8, NULL8, NULL8);
 			}
@@ -907,7 +908,7 @@ static void WeatherIndoorScreenTouch(char *msg) {
 					humSet++;
 				}
 
-				SendData2ScreeTouch(st_enum_weatherIndoor, adr, NULL16, NULL8,
+				SendData2ScreenTouch(st_enum_weatherIndoor, adr, NULL16, NULL8,
 						NULL8, tempSet, humSet, pm25, NULL8, NULL8, NULL8, NULL8,
 						NULL8, NULL8, NULL8);
 			}
@@ -931,7 +932,7 @@ static void TimeScreenTouch(char *msg) {
 				hours = data["HOUR"].GetInt();
 				minute = data["MINUTE"].GetInt();
 				second = data["SECOND"].GetInt();
-				SendData2ScreeTouch(st_enum_getTime, adr, NULL16,
+				SendData2ScreenTouch(st_enum_getTime, adr, NULL16,
 				NULL8, NULL8, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
 						NULL8, hours, minute, second);
 			}
@@ -958,7 +959,7 @@ static void DateScreenTouch(char *msg) {
 				month = data["MONTH"].GetInt();
 				date = data["DATE"].GetInt();
 				day = data["DAY"].GetInt();
-				SendData2ScreeTouch(st_enum_getDate, adr, NULL16,
+				SendData2ScreenTouch(st_enum_getDate, adr, NULL16,
 				NULL8, NULL8, NULL16, NULL16, NULL16, year, month, date, day,
 						NULL8,
 						NULL8, NULL8);
@@ -1123,13 +1124,17 @@ static void DelSceneDoorSensor(char *msg) {
 	}
 }
 
-static void ControlSwitch4(char *msg) {
+static void ControlSwitch(char *msg) {
 	Document document;
 	document.Parse(msg);
 	uint16_t adr;
+	uint16_t type;
 	uint8_t relayId;
 	uint8_t relayValue;
 	if (document.IsObject()) {
+		if (document.HasMember("TYPE")){
+			type = document["TYPE"].GetInt();
+		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID")) {
@@ -1151,25 +1156,26 @@ static void ControlSwitch4(char *msg) {
 					relayValue = switch4["RELAY4"].GetInt();
 				}
 			}
-			Function_Vendor(HCI_CMD_GATEWAY_CMD, ControlSwitch4_vendor_typedef,
-					adr, NULL16, NULL8, NULL8, NULL8, NULL16,
-					(relayId << 8 | relayValue), NULL16,
-					NULL16, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8, NULL8,
-					NULL16, 23);
+			Switch_Send_Uart(switch_enum_control, type, adr, relayId,
+					relayValue, NULL8, NULL8, NULL8, NULL8, NULL16);
 		}
 	}
 }
 
-static void AddSceneSwitch4(char *msg) {
+static void AddSceneSwitch(char *msg) {
 	Document document;
 	document.Parse(msg);
 	uint16_t adr;
+	uint16_t type;
 	uint16_t sceneId;
-	uint8_t relay1Value;
-	uint8_t relay2Value;
-	uint8_t relay3Value;
-	uint8_t relay4Value;
+	uint8_t relay1Value = 0xFF;
+	uint8_t relay2Value = 0xFF;
+	uint8_t relay3Value = 0xFF;
+	uint8_t relay4Value = 0xFF;
 	if (document.IsObject()) {
+		if (document.HasMember("TYPE")){
+			type = document["TYPE"].GetInt();
+		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID")) {
@@ -1192,34 +1198,32 @@ static void AddSceneSwitch4(char *msg) {
 				if (switchStatus.HasMember("RELAY4")) {
 					relay4Value = switchStatus["RELAY4"].GetInt();
 				}
-				Function_Vendor(HCI_CMD_GATEWAY_CMD,
-						SetSceneForSwitch4_vendor_typedef, adr, NULL16, NULL8,
-						NULL8, NULL8, NULL16, (relay1Value << 8 | relay2Value),
-						(relay3Value << 8 | relay4Value),
-						NULL16, NULL16, sceneId, NULL16, NULL8, NULL8, NULL8,
-						NULL8, NULL16, 23);
 			}
+			Switch_Send_Uart(switch_enum_addscene, type, adr, NULL8, NULL8,
+					relay1Value, relay2Value, relay3Value, relay4Value,
+					sceneId);
 		}
 	}
 }
 
-static void DelSceneSwitch4(char *msg) {
+static void DelSceneSwitch(char *msg) {
 	Document document;
 	document.Parse(msg);
 	uint16_t adr;
+	uint16_t type;
 	uint16_t sceneId;
 	if (document.IsObject()) {
+		if (document.HasMember("TYPE")){
+			type = document["TYPE"].GetInt();
+		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("SCENEID")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				sceneId = data["SCENEID"].GetInt();
-				Function_Vendor(HCI_CMD_GATEWAY_CMD,
-						DelSceneForSwitch4_vendor_typedef, adr, NULL16, NULL8,
-						NULL8,
-						NULL8, NULL16, NULL16, NULL16, NULL16, NULL16, sceneId,
-						NULL16, NULL8, NULL8, NULL8, NULL8, NULL16, 19);
 			}
+			Switch_Send_Uart(switch_enum_delscene, type, adr, NULL8, NULL8,
+					NULL8, NULL8, NULL8, NULL8, sceneId);
 		}
 	}
 }
@@ -1403,9 +1407,9 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"TIME_ACTION_PIR",				(TimeActionPir)},
 		{"ADDSCENE_DOOR_SENSOR",		(AddSceneDoorSensor)},
 		{"DELSCENE_DOOR_SENSOR",		(DelSceneDoorSensor)},
-		{"CONTROL_SWITCH4",				(ControlSwitch4)},
-		{"ADDSCENE_SWITCH4",			(AddSceneSwitch4)},
-		{"DELSCENE_SWITCH4",			(DelSceneSwitch4)},
+		{"CONTROL_SWITCH",				(ControlSwitch)},
+		{"ADDSCENE_SWITCH",				(AddSceneSwitch)},
+		{"DELSCENE_SWITCH",				(DelSceneSwitch)},
 		{"ADDSCENE_SOCKET1",			(AddSceneSocket1)},
 		{"ASK_PM_SENSOR",				(RequestStatusPmSensor)},
 		{"CONTROL_CURTAIN",				(ControlCurtain)},

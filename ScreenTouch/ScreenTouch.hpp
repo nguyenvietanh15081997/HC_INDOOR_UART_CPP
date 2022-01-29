@@ -67,7 +67,7 @@ typedef enum{
 }tpd_enum_st;
 
 
-void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_t iconId,
+void SendData2ScreenTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_t iconId,
 		uint8_t statusWeather, uint16_t temp, uint16_t hum,uint16_t pm25, uint16_t years,
 		uint8_t month, uint8_t date, uint8_t day, uint8_t hours, uint8_t minute,
 		uint8_t second) ;

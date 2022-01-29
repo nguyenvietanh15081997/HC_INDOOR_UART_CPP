@@ -10,6 +10,8 @@
 
 #include "../Include/Include.hpp"
 
+void RspTTL(TS_GWIF_IncomingData *data);
+
 void RspOnoff(TS_GWIF_IncomingData *data);
 
 void RspCCT(TS_GWIF_IncomingData *data);

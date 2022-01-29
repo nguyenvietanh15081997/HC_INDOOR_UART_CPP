@@ -26,6 +26,26 @@ static uint8_t Param2PercentHSL(uint16_t param) {
 }
 #endif
 
+void RspTTL(TS_GWIF_IncomingData *data){
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("UPDATE");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+		json.EndObject();
+	json.EndObject();
+
+	string s = dataMqtt.GetString();
+	char * sendT = new char[s.length()+1];
+	strcpy(sendT, s.c_str());
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	delete sendT;
+}
+
 void RspOnoff(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	uint16_t length = data->Length[0] | (data->Length[1] << 8);

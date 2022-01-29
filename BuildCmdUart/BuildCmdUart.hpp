@@ -43,10 +43,6 @@
 #define HEADER_SCENE_DOOR_SENSOR_SET			(0x0109)
 #define HEADER_SCENE_DOOR_SENSOR_DEL 			(0x0209)
 
-/*header store scene for switch touch 4 channel*/
-#define HEADER_CONTROL_SWITCH4					(0x000b)
-#define HEADER_SCENE_SWITCH4_SET 				(0x010b)
-#define HEADER_SCENE_SWITCH4_DEL 				(0x020b)
 
 /*header store scene for Sockets1*/
 #define HEADER_SCENE_SOCKET1_SET				(0x010F)

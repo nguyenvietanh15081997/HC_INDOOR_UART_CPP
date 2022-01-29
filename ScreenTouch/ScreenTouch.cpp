@@ -33,7 +33,7 @@ static void initDataSend()
 	vrts_CMD_STRUCTURE.opCode00[2] 			= 0x00;
 	vrts_CMD_STRUCTURE.opCode00[3]			= 0x00;
 	vrts_CMD_STRUCTURE.retry_cnt   			= st_parRetry_cnt;
-	vrts_CMD_STRUCTURE.rsp_max     			= st_parRetry_cnt;
+	vrts_CMD_STRUCTURE.rsp_max     			= st_parRsp_Max;
 }
 static void st_AddScene(uint16_t adrSt,uint16_t idScene, uint8_t idIcon){
 	initDataSend();
@@ -179,8 +179,8 @@ static void st_DefaultOnOff(uint16_t adrSt,uint16_t groupId){
 	vrts_CMD_STRUCTURE.para[6] = groupId & 0xFF;
 }
 
-#define TIME_SEND_UART			1000
-void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_t iconId,
+#define SCREENTOUCH_TIME_WAIT			1000
+void SendData2ScreenTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_t iconId,
 		uint8_t statusWeather, uint16_t temp, uint16_t hum,uint16_t pm25, uint16_t years,
 		uint8_t month, uint8_t date, uint8_t day, uint8_t hours, uint8_t minute,
 		uint8_t second) {
@@ -224,7 +224,7 @@ void SendData2ScreeTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8_
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
-	vrts_DataUartSend.timeWait = TIME_SEND_UART;
+	vrts_DataUartSend.timeWait = SCREENTOUCH_TIME_WAIT;
 	pthread_mutex_trylock(&vrpth_SendUart);
 	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);

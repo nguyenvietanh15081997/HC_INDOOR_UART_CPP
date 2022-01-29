@@ -7,6 +7,7 @@
 #include "../Sensor/Sensor.hpp"
 #include "../Light/Light.hpp"
 #include "../ScreenTouch/ScreenTouch.hpp"
+#include "../SwitchOnOff/SwitchOnOff.hpp"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 #include "../logging/slog.h"
 #include "Provision.hpp"
@@ -259,7 +260,7 @@ typedef struct processRsp0x52{
 	cb_rsp_function_t 	rspFuncProcess0x52;
 } proccessRsp0x52_t;
 
-#define MAX_FUNCTION0x52_RSP			14
+#define MAX_FUNCTION0x52_RSP			17
 proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{REMOTE_MODULE_AC_TYPE,				RspRemoteStatus},
 		{REMOTE_MODULE_DC_TYPE,				RspRemoteStatus},
@@ -274,7 +275,10 @@ proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{DOOR_SENSOR_HANGON_MODULE_TYPE,	RspDoorHangOn},
 		{SMOKE_SENSOR_MODULE_TYPE,			RspSmoke},
 		{LIGHT_SENSOR_MODULE_TYPE,			RspLightSensor},
-		{SWITCH4_MODULE_TYPE,				RspStatusSwitch4},
+		{SWITCH_1_CONTROL,					Rsp_Switch_Status},
+		{SWITCH_2_CONTROL,					Rsp_Switch_Status},
+		{SWITCH_3_CONTROL,					Rsp_Switch_Status},
+		{SWITCH_4_CONTROL,					Rsp_Switch_Status}
 };
 
 typedef struct processRsp{
@@ -282,8 +286,9 @@ typedef struct processRsp{
 	cb_rsp_function_t 	rspFuncProcess;
 } proccessRsp_t;
 
-#define MAX_FUNCTION_RSP			10
+#define MAX_FUNCTION_RSP			11
 proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
+		{CFG_DEFAULT_TTL_STATUS,			RspTTL},
 		{G_ONOFF_STATUS,					RspOnoff},
 		{LIGHT_CTL_TEMP_STATUS,				RspCCT},
 		{LIGHTNESS_STATUS,					RspDIM},
@@ -301,7 +306,7 @@ typedef struct processRspVendor{
 	cb_rsp_function_t 	rspFuncVendorProcess;
 } proccessRspVendor_t;
 
-#define MAX_FUNCTIONVENDOR_RSP			23
+#define MAX_FUNCTIONVENDOR_RSP			32
 proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_TYPE_ASK,						RspTypeDevice},
 		{HEADER_TYPE_SET,						RspTypeDevice},
@@ -320,9 +325,18 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_SCENE_PIR_SENSOR_TIMEACTION,	RspPirTimeAction},
 //		{HEADER_SCENE_DOOR_SENSOR_SET,			RspDoorSensorAddScene},
 //		{HEADER_SCENE_DOOR_SENSOR_DEL,			RspDoorSensorDelScene},
-		{HEADER_CONTROL_SWITCH4,				RspControlSwitch4},
-		{HEADER_SCENE_SWITCH4_SET,				RspAddSceneSwitch4},
-		{HEADER_SCENE_SWITCH4_DEL,				RspDelSceneSwitch4},
+		{SWITCH_1_CONTROL,						Rsp_Switch_Control},
+		{SWITCH_1_SCENE_SET,					Rsp_Switch_Scene_Set},
+		{SWITCH_1_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_2_CONTROL,						Rsp_Switch_Control},
+		{SWITCH_2_SCENE_SET,					Rsp_Switch_Scene_Set},
+		{SWITCH_2_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_3_CONTROL,						Rsp_Switch_Control},
+		{SWITCH_3_SCENE_SET,					Rsp_Switch_Scene_Set},
+		{SWITCH_3_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_4_CONTROL,						Rsp_Switch_Control},
+		{SWITCH_4_SCENE_SET,					Rsp_Switch_Scene_Set},
+		{SWITCH_4_SCENE_DEL,					Rsp_Switch_Scene_Del},
 		{ST_HEADER_ADD_SCENE,					RspScreenTouchAddScene},
 		{ST_HEADER_DEL_SCENE,					RspScreenTouchDelScene},
 		{ST_HEADER_DELALL_SCENE,				RspScreenTouchDelAllScene},
@@ -438,22 +452,14 @@ static int GWIF_ProcessData (void)
 			} else if((vrui_GWIF_LengthMeassge == 27) && (vrts_GWIF_IncomeMessage->Message[0] == 0xb5)){
 				sprintf((char*) PRO_appKey,
 						"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-						vrts_GWIF_IncomeMessage->Message[10],
-						vrts_GWIF_IncomeMessage->Message[11],
-						vrts_GWIF_IncomeMessage->Message[12],
-						vrts_GWIF_IncomeMessage->Message[13],
-						vrts_GWIF_IncomeMessage->Message[14],
-						vrts_GWIF_IncomeMessage->Message[15],
-						vrts_GWIF_IncomeMessage->Message[16],
-						vrts_GWIF_IncomeMessage->Message[17],
-						vrts_GWIF_IncomeMessage->Message[18],
-						vrts_GWIF_IncomeMessage->Message[19],
-						vrts_GWIF_IncomeMessage->Message[20],
-						vrts_GWIF_IncomeMessage->Message[21],
-						vrts_GWIF_IncomeMessage->Message[22],
-						vrts_GWIF_IncomeMessage->Message[23],
-						vrts_GWIF_IncomeMessage->Message[24],
-						vrts_GWIF_IncomeMessage->Message[25]);
+						vrts_GWIF_IncomeMessage->Message[10],vrts_GWIF_IncomeMessage->Message[11],
+						vrts_GWIF_IncomeMessage->Message[12],vrts_GWIF_IncomeMessage->Message[13],
+						vrts_GWIF_IncomeMessage->Message[14],vrts_GWIF_IncomeMessage->Message[15],
+						vrts_GWIF_IncomeMessage->Message[16],vrts_GWIF_IncomeMessage->Message[17],
+						vrts_GWIF_IncomeMessage->Message[18],vrts_GWIF_IncomeMessage->Message[19],
+						vrts_GWIF_IncomeMessage->Message[20],vrts_GWIF_IncomeMessage->Message[21],
+						vrts_GWIF_IncomeMessage->Message[22],vrts_GWIF_IncomeMessage->Message[23],
+						vrts_GWIF_IncomeMessage->Message[24],vrts_GWIF_IncomeMessage->Message[25]);
 			} else if(vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_KEY_BIND_EVT && vrts_GWIF_IncomeMessage->Message[1] == HCI_GATEWAY_CMD_BIND_SUSCESS){
 				slog_info("<provision> SUCCESS");
 			} else if (vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_KEY_BIND_RSP){
