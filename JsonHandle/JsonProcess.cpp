@@ -99,7 +99,10 @@ static void Scan(char *msg) {
 	Document document;
 	document.Parse(msg);
 	if (document.IsObject()) {
-		vrb_IsProvision = true;
+
+		stateProvision = statePro_null;
+		MODE_PROVISION = false;
+		sleep(3);
 		slog_print(SLOG_INFO, 1, "<provision>provision start");
 		gvrb_Provision = true;
 		MODE_PROVISION = true;
@@ -112,7 +115,6 @@ static void Stop(char *msg) {
 	Document document;
 	document.Parse(msg);
 	if (document.IsObject()) {
-		vrb_IsProvision = false;
 		slog_print(SLOG_INFO, 1, "<provision>provision stop");
 		MODE_PROVISION=false;
 		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));

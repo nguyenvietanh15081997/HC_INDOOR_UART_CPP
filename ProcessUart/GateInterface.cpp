@@ -167,7 +167,7 @@ static void GWIF_WriteMessage(void) {
 			bufferUartUpdate.shrink_to_fit();
 			t4 = t3;
 			t2 = t3;
-			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
+			//LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
 		}
 	}
 	pthread_mutex_unlock(&vrpth_SendUart);
@@ -176,7 +176,6 @@ static void GWIF_WriteMessage(void) {
 static uint8_t read_buf[256];
 static int num_bytes;
 static int num_count2Push;
-static uint16_t countReadUart = 0;
 
 static void GWIF_Read2Buffer (void){
 	if(num_bytes == 0){
@@ -357,8 +356,10 @@ static int GWIF_ProcessData (void)
 {
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
-		if(vrts_GWIF_IncomeMessage->Message[0] != 0x88){
-			LogDataUart(1, (vrui_GWIF_LengthMeassge + 2), (void*) &vrts_GWIF_IncomeMessage->Length[0]);
+		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
+			if ((vrts_GWIF_IncomeMessage->Message[5] != 128) && (vrts_GWIF_IncomeMessage->Message[6] != 224)) {
+				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
+			}
 		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \

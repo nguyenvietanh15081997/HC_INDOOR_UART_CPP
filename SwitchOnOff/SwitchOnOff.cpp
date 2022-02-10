@@ -24,7 +24,6 @@ static uint16_t listTypeSw[4] = { 22001, 22002, 22003, 22004 };
 static uint16_t listOpcodeControlSW[4] = { SWITCH_1_CONTROL, SWITCH_2_CONTROL, SWITCH_3_CONTROL, SWITCH_4_CONTROL };
 static uint16_t listOpcodeSceneSet[4] = { SWITCH_1_SCENE_SET, SWITCH_2_SCENE_SET, SWITCH_3_SCENE_SET, SWITCH_4_SCENE_SET };
 static uint16_t listOpcodeSceneDel[4] = { SWITCH_1_SCENE_DEL, SWITCH_2_SCENE_DEL, SWITCH_3_SCENE_DEL, SWITCH_4_SCENE_DEL };
-static string 	listRelay[4] = { "RELAY1", "RELAY2", "RELAY3", "RELAY4" };
 
 char IndexType (uint16_t typeSw){
 	char indexType = -1;
@@ -144,7 +143,7 @@ void Rsp_Switch_Control(TS_GWIF_IncomingData * data){
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("SWITCH");
+		json.Key("CMD");json.String("CONTROL_SWITCH");
 		json.Key("TYPE");json.Int(listTypeSw[IndexOpcode(opcode)]);
 		json.Key("DATA");
 		json.StartObject();
