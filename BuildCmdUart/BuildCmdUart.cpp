@@ -4,7 +4,7 @@
 #include "../Sensor/Sensor.hpp"
 #include "string.h"
 
-#define TIMEWAIT_UPDATE		2000
+#define TIMEWAIT_UPDATE		5000
 #define TIMEWAIT			500
 #define TIMECONFIGROOM  	900
 #define TIMEWAIT_REMOTE		600
@@ -136,8 +136,8 @@ static void CmdControlOnOff(uint16_t uniAdrControlOnOff, uint8_t statuOnOff,
 		uint16_t transition) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrControlOnOff & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (uniAdrControlOnOff >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = LIGHTOPCODE_ONOFF & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[1] = (LIGHTOPCODE_ONOFF >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = G_ONOFF_SET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (G_ONOFF_SET >> 8) & 0xFF;
 	if (statuOnOff == 1) {
 		vrts_CMD_STRUCTURE.para[0] = statuOnOff;
 	}
@@ -246,7 +246,32 @@ static void CmdHSL_Set_NoAck(uint16_t uniAdrHSL, uint16_t h, uint16_t s,
 	vrts_CMD_STRUCTURE.para[8] = (transition >> 8) & 0xFF;
 }
 
-void CmdUpdateLight(uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
+static void CmdLightness_CCT_Set(uint16_t adr, uint16_t lightness, uint16_t cct){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = LIGHT_CTL_SET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (LIGHT_CTL_SET >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = lightness & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = (lightness >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = cct & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = (cct >> 8) & 0xFF;
+}
+
+static void CmdLightness_CCT_Get(uint16_t adr){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = LIGHT_CTL_GET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (LIGHT_CTL_GET >> 8) & 0xFF;
+}
+
+static void CmdOnOff_Get(uint16_t adr){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = G_ONOFF_GET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (G_ONOFF_GET >> 8) & 0xFF;
+}
+
+void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd>>8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode00[0] = 0;
@@ -255,11 +280,13 @@ void CmdUpdateLight(uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
 	vrts_CMD_STRUCTURE.opCode00[3] = 0;
 	vrts_CMD_STRUCTURE.retry_cnt = 0;
 	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
-	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
-	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >>8 ) & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[0] = CFG_DEFAULT_TTL_GET & 0xFF;
-	vrts_CMD_STRUCTURE.opCode[1] = (CFG_DEFAULT_TTL_GET >> 8) & 0xFF;
-
+	if (type  == update_OnOff){
+		CmdOnOff_Get(adr);
+	} else if (type == update_DIM_CCT){
+		CmdLightness_CCT_Get(adr);
+	} else if (type == update_HSL){
+		CmdHSL_Get(adr);
+	}
 	uartSendDev_t vrts_UartUpdate;
 	vrts_UartUpdate.length = cmdLength;
 	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;

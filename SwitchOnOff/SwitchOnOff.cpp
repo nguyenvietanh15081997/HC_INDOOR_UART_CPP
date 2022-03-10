@@ -15,6 +15,7 @@ using namespace rapidjson;
 #define SWITCH_LENGTH_CONTROL		23
 #define SWITCH_LENGTH_SCENE_SET		23
 #define SWITCH_LENGTH_SCENE_DEL		19
+#define SWITCH_LENGTH_STATUS		17
 
 static uint16_t switch_cmd = HCI_CMD_GATEWAY_CMD;
 static uint8_t switch_parRetry_cnt = 0x00;
@@ -24,6 +25,7 @@ static uint16_t listTypeSw[4] = { 22001, 22002, 22003, 22004 };
 static uint16_t listOpcodeControlSW[4] = { SWITCH_1_CONTROL, SWITCH_2_CONTROL, SWITCH_3_CONTROL, SWITCH_4_CONTROL };
 static uint16_t listOpcodeSceneSet[4] = { SWITCH_1_SCENE_SET, SWITCH_2_SCENE_SET, SWITCH_3_SCENE_SET, SWITCH_4_SCENE_SET };
 static uint16_t listOpcodeSceneDel[4] = { SWITCH_1_SCENE_DEL, SWITCH_2_SCENE_DEL, SWITCH_3_SCENE_DEL, SWITCH_4_SCENE_DEL };
+static uint16_t listOpcodeStatus[4] = { SWITCH_1_STATUS, SWITCH_2_STATUS, SWITCH_3_STATUS, SWITCH_4_STATUS };
 
 char IndexType (uint16_t typeSw){
 	char indexType = -1;
@@ -41,7 +43,8 @@ char IndexOpcode (uint16_t opcode){
 	for(int i = 0;i<4;i++){
 		if ((opcode == listOpcodeControlSW[i])
 				|| (opcode == listOpcodeSceneSet[i])
-				|| (opcode == listOpcodeSceneDel[i])) {
+				|| (opcode == listOpcodeSceneDel[i])
+				|| (opcode == listOpcodeStatus[i])) {
 			indexOpcode = i;
 			break;
 		}
@@ -96,6 +99,18 @@ static void Switch_Scene_Del(uint16_t typeSw, uint16_t adr, uint16_t sceneId){
 	vrts_CMD_STRUCTURE.para[6] = (sceneId >> 8) & 0xFF;
 }
 
+static void Switch_RequestStatus(uint16_t typeSw, uint16_t adr){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = listOpcodeStatus[IndexType(typeSw)] & 0xFF;
+	vrts_CMD_STRUCTURE.para[4] = (listOpcodeStatus[IndexType(typeSw)] >> 8) & 0xFF;
+}
+
 static void InitFramUart(){
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0]	= switch_cmd & 0xFF;
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1]	= (switch_cmd>>8) & 0xFF;
@@ -122,6 +137,9 @@ void Switch_Send_Uart(switch_enum_cmd typeCmd, uint16_t typeSw, uint16_t adr,
 	} else if (typeCmd == switch_enum_delscene) {
 		Switch_Scene_Del(typeSw, adr, sceneId);
 		cmdLength = SWITCH_LENGTH_SCENE_DEL;
+	} else if (typeCmd == switch_enum_status){
+		Switch_RequestStatus(typeSw,adr);
+		cmdLength = SWITCH_LENGTH_STATUS;
 	}
 
 	uartSendDev_t vrts_DataUartSend;
@@ -238,6 +256,49 @@ void Rsp_Switch_Status(TS_GWIF_IncomingData * data){
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
 			json.Key("RELAY_ID");json.Int(relayId);
 			json.Key("RELAY_STATUS");json.Int(relayValue);
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s = dataMqtt.GetString();
+	char * sendT = new char[s.length()+1];
+	strcpy(sendT, s.c_str());
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	delete sendT;
+}
+
+void Rsp_Switch_RequestStatus(TS_GWIF_IncomingData * data){
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint16_t opcode = data->Message[8] | (data->Message[9] << 8);
+	int index = 0;
+	if (opcode == SWITCH_1_STATUS){
+		index = 1;
+	} else if (opcode == SWITCH_2_STATUS){
+		index = 2;
+	} else if (opcode == SWITCH_3_STATUS){
+		index = 3;
+	} else if (opcode == SWITCH_4_STATUS){
+		index = 4;
+	}
+	uint8_t listId[4] = {11,12,13,14};
+	uint8_t listValue[4] = {data->Message[10], data->Message[11], data->Message[12], data->Message[13]};
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("UPDATE");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("PROPERTIES");
+			json.StartArray();
+			for(int i = 0; i < index ; i++) {
+				json.StartObject();
+					json.Key("ID"); json.Int(listId[i]);
+					json.Key("VALUE"); json.Int(listValue[i]);
+				json.EndObject();
+			}
+			json.EndArray();
 		json.EndObject();
 	json.EndObject();
 

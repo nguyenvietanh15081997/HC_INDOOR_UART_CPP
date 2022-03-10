@@ -214,10 +214,16 @@ typedef enum{
 	IrSendData_vendor_typedef
 } functionTypeDef;
 
+typedef enum{
+	update_OnOff,
+	update_DIM_CCT,
+	update_HSL,
+	update_Null
+}typeUpdate;
 /*
  * Update light
  */
-void CmdUpdateLight(uint16_t cmd, uint16_t adr, uint16_t cmdLength);
+void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength);
 
 /*
  * Main function: build frame data control node, and transmit uart

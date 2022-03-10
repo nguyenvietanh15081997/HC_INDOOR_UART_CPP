@@ -9,6 +9,7 @@
 #include "../SwitchOnOff/SwitchOnOff.hpp"
 #include "../ProcessUart/Provision.hpp"
 #include "../Mqtt/Mqtt.hpp"
+#include "../Curtain/Curtain.hpp"
 
 
 using namespace std;
@@ -141,14 +142,52 @@ static void Stop(char *msg) {
 static void Update(char *msg) {
 	Document document;
 	document.Parse(msg);
+	uint16_t adr = 0;
+	uint16_t typeDev = 0;
 	if (document.IsObject()) {
-		if (document.HasMember("DATA")) {
+		if (document.HasMember("DATA") && document["DATA"].IsArray()) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
-				const Value &deviceUnicast = data["DEVICE_UNICAST_ID"];
-				for (SizeType i = 0; i < deviceUnicast.Size(); i++) {
-					uint16_t adr = deviceUnicast[i].GetInt();
-					CmdUpdateLight(HCI_CMD_GATEWAY_CMD, adr, 12);
+			for(rapidjson::size_t i=0; i<data.Size(); i++){
+				const Value &device = data[i];
+				if(device.HasMember("DEVICE_UNICAST_ID") && device["DEVICE_UNICAST_ID"].IsInt()){
+					adr = device["DEVICE_UNICAST_ID"].GetInt();
+					if(device.HasMember("TYPE_DV") && device["TYPE_DV"].IsInt()){
+						typeDev = device["TYPE_DV"].GetInt();
+						if (typeDev == LED_DOWNLIGHT_COB_HEP
+								|| typeDev == LED_DOWNLIGHT_COB_RONG
+								|| typeDev == LED_DOWNLIGHT_COB_TRANG_TRI
+								|| typeDev == LED_DOWNLIGHT_SMT
+								|| typeDev == LED_PANEL_TRON
+								|| typeDev == LED_PANEL_VUONG
+								|| typeDev == LED_OP_TRAN
+								|| typeDev == LED_OP_TUONG
+								|| typeDev == LED_CHIEU_GUONG
+								|| typeDev == LED_CHIEU_TRANH_GAN_TUONG
+								|| typeDev == LED_TRACKLIGHT
+								|| typeDev == LED_THA_TRAN
+								|| typeDev == LED_DAY_CCT
+								|| typeDev == LED_Tube_M16
+								|| typeDev == DEN_BAN
+								|| typeDev == LED_FLOODING) {
+							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
+						} else if (typeDev == LED_DAY_RGBCW
+								|| typeDev == LED_BULD
+								|| typeDev == LED_OP_TRAN_LOA) {
+							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
+							CmdUpdateLight(update_HSL, HCI_CMD_GATEWAY_CMD, adr, 12);
+						} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF){
+							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
+								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
+								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
+								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04) {
+							Switch_Send_Uart(switch_enum_status, typeDev, adr,
+									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
+									NULL16);
+						}
+					}
 				}
 			}
 		}
@@ -512,6 +551,13 @@ static void DelScene(char *msg) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, DelSence_typedef, adrCct,
 							NULL8, NULL8, NULL16, NULL16, sceneId, NULL16,
 							NULL16, NULL16, NULL16, NULL16, 14);
+					for (int n = 0; n < MAX_DEV; n++) {
+						if(g_listAdrScene[n][0] == 0 && g_listAdrScene[n][1] == 0){
+							g_listAdrScene[n][0] = adrCct;
+							g_listAdrScene[n][1] = sceneId;
+							break;
+						}
+					}
 				}
 			}
 			if (data.HasMember("DEVICE_RGB_UNICAST_ID") && data["DEVICE_RGB_UNICAST_ID"].IsArray()) {
@@ -521,6 +567,13 @@ static void DelScene(char *msg) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, DelSceneRgb_vendor_typedef, adrRgb,
 							NULL8, NULL8, NULL16, NULL16, sceneId, NULL16,
 							NULL16, NULL16, NULL16, NULL16, 14);
+					for (int n = 0; n < MAX_DEV; n++) {
+						if(g_listAdrScene[n][0] == 0 && g_listAdrScene[n][1] == 0){
+							g_listAdrScene[n][0] = adrCct;
+							g_listAdrScene[n][1] = sceneId;
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -1208,6 +1261,25 @@ static void AddSceneSwitch(char *msg) {
 	}
 }
 
+static void RequestStatusSwitch(char * msg){
+	Document document;
+	document.Parse(msg);
+	uint16_t adr;
+	uint16_t type;
+	if (document.IsObject()) {
+		if (document.HasMember("TYPE")){
+			type = document["TYPE"].GetInt();
+		}
+		if (document.HasMember("DATA")) {
+			const Value &data = document["DATA"];
+			if (data.HasMember("DEVICE_UNICAST_ID")) {
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				Switch_Send_Uart(switch_enum_status, type, adr, NULL8, NULL8,NULL8, NULL8, NULL8, NULL8,NULL8);
+			}
+		}
+	}
+}
+
 static void DelSceneSwitch(char *msg) {
 	Document document;
 	document.Parse(msg);
@@ -1261,20 +1333,15 @@ static void ControlCurtain(char *msg) {
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 			}
 			if (data.HasMember("CURTAIN_STATUS")) {
 				const Value &curtain = data["CURTAIN_STATUS"];
-				if (curtain.HasMember("STATUS") && curtain.HasMember("PERCENT")) {
-					status = curtain["STATUS"].GetInt();
+				if (curtain.HasMember("TYPE") && curtain.HasMember("PERCENT")) {
+					status = curtain["TYPE"].GetInt();
 					percent = curtain["PERCENT"].GetInt();
-					Function_Vendor(HCI_CMD_GATEWAY_CMD,
-							ControlCurtain_vendor_typedef, adr, NULL16, status,
-							percent,
-							NULL8, NULL16, NULL16, NULL16, NULL16, NULL16,
-							NULL16, NULL16, NULL8, NULL8, NULL8, NULL8, NULL16,
-							19);
+					CURTAIN_Cmd(enum_curtain_control,adr, status,percent,NULL16);
 				}
 			}
 		}
@@ -1292,11 +1359,7 @@ static void AddSceneCurtain(char *msg) {
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("SCENEID")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				sceneId = data["SCENEID"].GetInt();
-				Function_Vendor(HCI_CMD_GATEWAY_CMD,
-						SetSceneCurtain_vendor_typedef, adr, NULL16, NULL8,
-						NULL8, NULL8,
-						NULL16, NULL16, NULL16, NULL16, NULL16, sceneId, NULL16,
-						NULL8, NULL8, NULL8, NULL8, NULL16, 19);
+				CURTAIN_Cmd(enum_curtain_scene_set, adr, NULL8, NULL8, sceneId);
 			}
 		}
 	}
@@ -1313,11 +1376,7 @@ static void DelSceneCurtain(char *msg) {
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("SCENEID")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				sceneId = data["SCENEID"].GetInt();
-				Function_Vendor(HCI_CMD_GATEWAY_CMD,
-						DelSceneCurtain_vendor_typedef, adr, NULL16, NULL8,
-						NULL8, NULL8,
-						NULL16, NULL16, NULL16, NULL16, NULL16, sceneId, NULL16,
-						NULL8, NULL8, NULL8, NULL8, NULL16, 19);
+				CURTAIN_Cmd(enum_curtain_scene_del, adr, NULL8, NULL8, sceneId);
 			}
 		}
 	}
@@ -1333,11 +1392,22 @@ static void RequestStatusCurtain(char *msg) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
-				Function_Vendor(HCI_CMD_GATEWAY_CMD,
-						AskSceneCurtain_vendor_typedef, adr, NULL16, NULL8,
-						NULL8, NULL8,
-						NULL16, NULL16, NULL16, NULL16, NULL16, NULL16, NULL16,
-						NULL8, NULL8, NULL8, NULL8, NULL16, 17);
+				CURTAIN_Cmd(enum_curtain_status_request, adr, NULL8, NULL8, NULL16);
+			}
+		}
+	}
+}
+
+static void CalibCurtain (char * msg){
+	Document document;
+	document.Parse(msg);
+	uint16_t adr;
+	if (document.IsObject()) {
+		if (document.HasMember("DATA")) {
+			const Value &data = document["DATA"];
+			if (data.HasMember("DEVICE_UNICAST_ID")) {
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				CURTAIN_Cmd(enum_curtain_calib, adr, NULL8, NULL8, NULL16);
 			}
 		}
 	}
@@ -1372,7 +1442,7 @@ static void DelHc(char *msg) {
 
 }
 
-#define MAX_FUNCTION					52
+#define MAX_FUNCTION					54
 functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"ONOFF",						(OnOff)},
 		{"CCT",							(CCT_Set)},
@@ -1412,12 +1482,14 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"CONTROL_SWITCH",				(ControlSwitch)},
 		{"ADDSCENE_SWITCH",				(AddSceneSwitch)},
 		{"DELSCENE_SWITCH",				(DelSceneSwitch)},
+		{"REQUEST_STATUS_SWITCH",		(RequestStatusSwitch)},
 		{"ADDSCENE_SOCKET1",			(AddSceneSocket1)},
 		{"ASK_PM_SENSOR",				(RequestStatusPmSensor)},
-		{"CONTROL_CURTAIN",				(ControlCurtain)},
-		{"ADDSCENE_CURTAIN",			(AddSceneCurtain)},
-		{"DELSCENE_CURTAIN",			(DelSceneCurtain)},
-		{"ASK_STATUS_CURTAIN",			(RequestStatusCurtain)},
+		{"CURTAIN_CONTROL",				(ControlCurtain)},
+		{"CURTAIN_SCENE_SET",			(AddSceneCurtain)},
+		{"CURTAIN_SCENE_DEL",			(DelSceneCurtain)},
+		{"CURTAIN_STATUS_REQUEST",		(RequestStatusCurtain)},
+		{"CURTAIN_CALIB", 				(CalibCurtain)},
 		{"UPDATE_SENSOR_STATUS",		(RequestStatusSensor)},
 		{"SEND_UART", 					(Send_Uart)},
 		{"SCAN",						(Scan)},
@@ -1434,6 +1506,9 @@ void JsonHandle(char * data) {
 	if (document.IsObject()) {
 		if (document.HasMember("CMD")) {
 			string cmd = document["CMD"].GetString();
+			if(cmd.compare("UPDATE") != 0){
+				slog_print(SLOG_INFO, 1, "<mqtt>receive:%s",data);
+			}
 			for (int i = 0; i < MAX_FUNCTION; i++) {
 				if (cmd.compare(listCommandMQTT[i].commandStr) == 0) {
 					listCommandMQTT[i].funcProcess(data);

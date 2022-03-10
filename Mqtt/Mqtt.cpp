@@ -40,7 +40,7 @@ void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_
 	memcpy(dataPush.dataMqtt,message->payload,lengthMsg+1);
 	Document document;
 	document.Parse(dataPush.dataMqtt);
-	slog_info("<mqtt>receive: %s", dataPush.dataMqtt);
+	//slog_info("<mqtt>receive: %s", dataPush.dataMqtt);
 	if(document.IsObject()){
 		ring_push_head((ringbuffer_t *)&vr_RingBufDataMqtt,(void *)(&dataPush));
 	}

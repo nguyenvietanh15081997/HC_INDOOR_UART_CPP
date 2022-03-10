@@ -21,16 +21,43 @@ using namespace std;
 
 #define PRINTUART			1
 
+#define PROPERTY_ONOFF		0
+#define PROPERTY_DIM		1
+#define PROPERTY_CCT		2
+#define PROPERTY_H			3
+#define PROPERTY_S			4
+#define PROPERTY_L			5
+#define PROPERTY_SONG		6
+#define PROPERTY_BLINK_MODE	7
+#define PROPERTY_BATTERY	8
+#define PROPERTY_LUX		9
+#define PROPERTY_PIR		10
+#define PROPERTY_BUTTON1	11
+#define PROPERTY_BUTTON2	12
+#define PROPERTY_BUTTON3	13
+#define PROPERTY_BUTTON4	14
+
 extern bool 				gvrb_AddSceneLight;
 extern bool 				gvrb_AddGroupLight;
 extern bool					gvrb_Provision;
 extern uint16_t 			gSceneIdDel;
+extern bool 				gvrb_UpdateONOFF;
+extern bool 				gvrb_UpdateHSL;
 extern bool 				startProcessRoom ;
 
 extern int ptempIndoor;
 extern uint16_t phumIndoor;
 extern uint16_t ppm25;
 extern pthread_mutex_t vrpth_SendUart;
+
+#define MAX_DEV    500
+extern uint16_t g_listAdrScene[MAX_DEV][2];
+
+typedef enum {
+	typeCmd_Control,
+	typeCmd_Update
+}typeCmd_t;
+extern typeCmd_t vrte_TypeCmd;
 
 /*frame data to control device*/
 typedef struct{

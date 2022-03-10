@@ -3,6 +3,7 @@
  */
 
 #include "GateInterface.hpp"
+#include "../Curtain/Curtain.hpp"
 #include "../Remote/Remote.hpp"
 #include "../Sensor/Sensor.hpp"
 #include "../Light/Light.hpp"
@@ -134,7 +135,6 @@ static void GWIF_WriteMessage(void) {
 			bufferDataUart.shrink_to_fit();
 			t2 = t1;
 			t4 = t1;
-
 			LogDataUart(0, data.length, (void*) &data.dataUart.HCI_CMD_GATEWAY[0]);
 
 			uint16_t opcodeCmd = data.dataUart.opCode[0] | (data.dataUart.opCode[1] << 8);
@@ -153,6 +153,7 @@ static void GWIF_WriteMessage(void) {
 				gvrb_AddGroupLight = false;
 				break;
 			}
+			vrte_TypeCmd = typeCmd_Control;
 		}
 	}
 	else if (bufferUartUpdate.size() && !gvrb_Provision){
@@ -160,14 +161,14 @@ static void GWIF_WriteMessage(void) {
 		t3 = getMillisOfDay();
 		if((t3 - t4) >= waitUpdate) {
 			waitUpdate = dataUpdate.timeWait;
-			waitCmd = dataUpdate.timeWait;
 			write(serial_port, ToChar(dataUpdate.dataUart), dataUpdate.length);
 			tcdrain(serial_port);
 			bufferUartUpdate.pop_front();
 			bufferUartUpdate.shrink_to_fit();
 			t4 = t3;
 			t2 = t3;
-			//LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
+//			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
+			vrte_TypeCmd = typeCmd_Update;
 		}
 	}
 	pthread_mutex_unlock(&vrpth_SendUart);
@@ -259,13 +260,14 @@ typedef struct processRsp0x52{
 	cb_rsp_function_t 	rspFuncProcess0x52;
 } proccessRsp0x52_t;
 
-#define MAX_FUNCTION0x52_RSP			17
+#define MAX_FUNCTION0x52_RSP			19
 proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{REMOTE_MODULE_AC_TYPE,				RspRemoteStatus},
 		{REMOTE_MODULE_DC_TYPE,				RspRemoteStatus},
 		{SCREEN_TOUCH_MODULE_TYPE,			RspScreenTouchStatus},
 		{POWER_TYPE,						RspPowerStatusSensor},
 		{ST_HEADER_ONOFF_GROUP,				RspScreenTouchStatusOnOffGroup},
+		{ST_HEADER_ADJUST_GROUP,			RspScreenTouchAdjust},
 		{PIR_SENSOR_MODULE_TYPE,			RspPirSenSor},
 		{PM_SENSOR_MODULE_TEMP_HUM_TYPE,	RspPmSensorTempHum},
 		{PM_SENSOR_MODULE_PM_TYPE,			RspPmSensor},
@@ -277,7 +279,8 @@ proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{SWITCH_1_CONTROL,					Rsp_Switch_Status},
 		{SWITCH_2_CONTROL,					Rsp_Switch_Status},
 		{SWITCH_3_CONTROL,					Rsp_Switch_Status},
-		{SWITCH_4_CONTROL,					Rsp_Switch_Status}
+		{SWITCH_4_CONTROL,					Rsp_Switch_Status},
+		{CURTAIN_STATUS_RSP,				CURTAIN_RSP_PressBT}
 };
 
 typedef struct processRsp{
@@ -287,7 +290,7 @@ typedef struct processRsp{
 
 #define MAX_FUNCTION_RSP			11
 proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
-		{CFG_DEFAULT_TTL_STATUS,			RspTTL},
+		{LIGHT_CTL_STATUS,					RspDim_CCT},
 		{G_ONOFF_STATUS,					RspOnoff},
 		{LIGHT_CTL_TEMP_STATUS,				RspCCT},
 		{LIGHTNESS_STATUS,					RspDIM},
@@ -305,7 +308,7 @@ typedef struct processRspVendor{
 	cb_rsp_function_t 	rspFuncVendorProcess;
 } proccessRspVendor_t;
 
-#define MAX_FUNCTIONVENDOR_RSP			32
+#define MAX_FUNCTIONVENDOR_RSP			42
 proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_TYPE_ASK,						RspTypeDevice},
 		{HEADER_TYPE_SET,						RspTypeDevice},
@@ -327,15 +330,19 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{SWITCH_1_CONTROL,						Rsp_Switch_Control},
 		{SWITCH_1_SCENE_SET,					Rsp_Switch_Scene_Set},
 		{SWITCH_1_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_1_STATUS,						Rsp_Switch_RequestStatus},
 		{SWITCH_2_CONTROL,						Rsp_Switch_Control},
 		{SWITCH_2_SCENE_SET,					Rsp_Switch_Scene_Set},
 		{SWITCH_2_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_2_STATUS,						Rsp_Switch_RequestStatus},
 		{SWITCH_3_CONTROL,						Rsp_Switch_Control},
 		{SWITCH_3_SCENE_SET,					Rsp_Switch_Scene_Set},
 		{SWITCH_3_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_3_STATUS,						Rsp_Switch_RequestStatus},
 		{SWITCH_4_CONTROL,						Rsp_Switch_Control},
 		{SWITCH_4_SCENE_SET,					Rsp_Switch_Scene_Set},
 		{SWITCH_4_SCENE_DEL,					Rsp_Switch_Scene_Del},
+		{SWITCH_4_STATUS,						Rsp_Switch_RequestStatus},
 		{ST_HEADER_ADD_SCENE,					RspScreenTouchAddScene},
 		{ST_HEADER_DEL_SCENE,					RspScreenTouchDelScene},
 		{ST_HEADER_DELALL_SCENE,				RspScreenTouchDelAllScene},
@@ -345,11 +352,13 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{ST_HEADER_GET_TIME,					RspScreenTouchTime},
 		{ST_HEADER_GET_DATE,					RspScreenTouchDate},
 		{ST_HEADER_REQUEST_TIME,				RequestTime},
-		{ST_HEADER_REQUEST_TEMP_HUM,			RequestTempHum}
-//		{HEADER_CONTROL_CURTAIN,				RspControlCurtain},
-//		{HEADER_SET_SCENE_CURTAIN,				RspCurtainAddScene},
-//		{HEADER_DEL_SCENE_CURTAIN,				RspCurtainDelScene},
-//		{HEADER_ASK_STATUS_CURTAIN,				RspCurtainStatus},
+		{ST_HEADER_REQUEST_TEMP_HUM,			RequestTempHum},
+		{CURTAIN_CONTROL,						CURTAIN_RSP_Control},
+		{CURTAIN_SCENE_SET,						CURTAIN_RSP_Scene_Set},
+		{CURTAIN_SCENE_DEL,						CURTAIN_RSP_Scene_Del},
+		{CURTAIN_STATUS_RSP,					CURTAIN_RSP_Status_Request},
+		{CURTAIN_CALIB, 						CURTAIN_RSP_Calib},
+		{CURTAIN_CONFIG_MOTOR,					CURTAIN_RSP_ConfigMotor}
 };
 
 static int GWIF_ProcessData (void)
@@ -357,9 +366,7 @@ static int GWIF_ProcessData (void)
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
 		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
-			if ((vrts_GWIF_IncomeMessage->Message[5] != 128) && (vrts_GWIF_IncomeMessage->Message[6] != 224)) {
-				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
-			}
+			LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
 		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \
@@ -369,30 +376,19 @@ static int GWIF_ProcessData (void)
 					OUTMESSAGE_MACSelect[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 1];
 				}
 				sprintf((char *)PRO_mac, "%02x:%02x:%02x:%02x:%02x:%02x",
-						vrts_GWIF_IncomeMessage->Message[1],
-						vrts_GWIF_IncomeMessage->Message[2],
-						vrts_GWIF_IncomeMessage->Message[3],
-						vrts_GWIF_IncomeMessage->Message[4],
-						vrts_GWIF_IncomeMessage->Message[5],
-						vrts_GWIF_IncomeMessage->Message[6]);
+						vrts_GWIF_IncomeMessage->Message[1],vrts_GWIF_IncomeMessage->Message[2],
+						vrts_GWIF_IncomeMessage->Message[3],vrts_GWIF_IncomeMessage->Message[4],
+						vrts_GWIF_IncomeMessage->Message[5],vrts_GWIF_IncomeMessage->Message[6]);
 				sprintf((char*) PRO_uuid,
 						"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-						vrts_GWIF_IncomeMessage->Message[10],
-						vrts_GWIF_IncomeMessage->Message[11],
-						vrts_GWIF_IncomeMessage->Message[12],
-						vrts_GWIF_IncomeMessage->Message[13],
-						vrts_GWIF_IncomeMessage->Message[14],
-						vrts_GWIF_IncomeMessage->Message[15],
-						vrts_GWIF_IncomeMessage->Message[16],
-						vrts_GWIF_IncomeMessage->Message[17],
-						vrts_GWIF_IncomeMessage->Message[18],
-						vrts_GWIF_IncomeMessage->Message[19],
-						vrts_GWIF_IncomeMessage->Message[20],
-						vrts_GWIF_IncomeMessage->Message[21],
-						vrts_GWIF_IncomeMessage->Message[22],
-						vrts_GWIF_IncomeMessage->Message[23],
-						vrts_GWIF_IncomeMessage->Message[24],
-						vrts_GWIF_IncomeMessage->Message[25]);
+						vrts_GWIF_IncomeMessage->Message[10],vrts_GWIF_IncomeMessage->Message[11],
+						vrts_GWIF_IncomeMessage->Message[12],vrts_GWIF_IncomeMessage->Message[13],
+						vrts_GWIF_IncomeMessage->Message[14],vrts_GWIF_IncomeMessage->Message[15],
+						vrts_GWIF_IncomeMessage->Message[16],vrts_GWIF_IncomeMessage->Message[17],
+						vrts_GWIF_IncomeMessage->Message[18],vrts_GWIF_IncomeMessage->Message[19],
+						vrts_GWIF_IncomeMessage->Message[20],vrts_GWIF_IncomeMessage->Message[21],
+						vrts_GWIF_IncomeMessage->Message[22],vrts_GWIF_IncomeMessage->Message[23],
+						vrts_GWIF_IncomeMessage->Message[24],vrts_GWIF_IncomeMessage->Message[25]);
 				slog_print(SLOG_INFO,1,"%s",(char *)PRO_uuid);
 				stateProvision = statePro_selectMac;
 
@@ -430,22 +426,14 @@ static int GWIF_ProcessData (void)
 				}
 				sprintf((char*) PRO_netKey,
 						"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-						vrts_GWIF_IncomeMessage->Message[2],
-						vrts_GWIF_IncomeMessage->Message[3],
-						vrts_GWIF_IncomeMessage->Message[4],
-						vrts_GWIF_IncomeMessage->Message[5],
-						vrts_GWIF_IncomeMessage->Message[6],
-						vrts_GWIF_IncomeMessage->Message[7],
-						vrts_GWIF_IncomeMessage->Message[8],
-						vrts_GWIF_IncomeMessage->Message[9],
-						vrts_GWIF_IncomeMessage->Message[10],
-						vrts_GWIF_IncomeMessage->Message[11],
-						vrts_GWIF_IncomeMessage->Message[12],
-						vrts_GWIF_IncomeMessage->Message[13],
-						vrts_GWIF_IncomeMessage->Message[14],
-						vrts_GWIF_IncomeMessage->Message[15],
-						vrts_GWIF_IncomeMessage->Message[16],
-						vrts_GWIF_IncomeMessage->Message[17]);
+						vrts_GWIF_IncomeMessage->Message[2],vrts_GWIF_IncomeMessage->Message[3],
+						vrts_GWIF_IncomeMessage->Message[4],vrts_GWIF_IncomeMessage->Message[5],
+						vrts_GWIF_IncomeMessage->Message[6],vrts_GWIF_IncomeMessage->Message[7],
+						vrts_GWIF_IncomeMessage->Message[8],vrts_GWIF_IncomeMessage->Message[9],
+						vrts_GWIF_IncomeMessage->Message[10],vrts_GWIF_IncomeMessage->Message[11],
+						vrts_GWIF_IncomeMessage->Message[12],vrts_GWIF_IncomeMessage->Message[13],
+						vrts_GWIF_IncomeMessage->Message[14],vrts_GWIF_IncomeMessage->Message[15],
+						vrts_GWIF_IncomeMessage->Message[16],vrts_GWIF_IncomeMessage->Message[17]);
 				stateProvision = statePro_provision;
 			} else if (vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_PROVISION_EVT
 					&& vrts_GWIF_IncomeMessage->Message[1] == HCI_GATEWAY_CMD_PROVISION_SUSCESS) {

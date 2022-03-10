@@ -508,12 +508,71 @@ void RspScreenTouchStatusOnOffGroup(TS_GWIF_IncomingData *data){
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("ONOFF_GROUP_SCREENTOUCH");
+		json.Key("CMD");json.String("ADJUST_GROUP_SCREEN_TOUCH");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
 			json.Key("GROUPID");json.Int(groupId);
-			json.Key("STATUS");json.Int(status);
+			json.Key("PROPERTIES");
+			json.StartArray();
+				json.StartObject();
+					json.Key("ID");json.Int(PROPERTY_ONOFF);
+					json.Key("VALUE"); json.Int(status);
+				json.EndObject();
+			json.EndArray();
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s = dataMqtt.GetString();
+	char *sendT = new char[s.length() + 1];
+	strcpy(sendT, s.c_str());
+	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	delete sendT;
+}
+
+#define ST_ADJUST_CCT	1
+#define ST_ADJUST_DIM	0
+#define ST_ADJUST_HSL	2
+void RspScreenTouchAdjust(TS_GWIF_IncomingData * data){
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint16_t groupId = data->Message[8] | (data->Message[9] << 8);
+	uint8_t typeAdjust = data->Message[10];
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("ADJUST_GROUP_SCREEN_TOUCH");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("GROUPID");json.Int(groupId);
+			json.Key("PROPERTIES");
+			json.StartArray();
+				if(typeAdjust == ST_ADJUST_DIM){
+					json.StartObject();
+					json.Key("ID"); json.Int(PROPERTY_DIM);
+					json.Key("VALUE"); json.Int(data->Message[11]);
+					json.EndObject();
+				} else if(typeAdjust == ST_ADJUST_CCT){
+					json.StartObject();
+					json.Key("ID"); json.Int(PROPERTY_CCT);
+					json.Key("VALUE"); json.Int(data->Message[11]);
+					json.EndObject();
+				} else if(typeAdjust == ST_ADJUST_HSL){
+					json.StartObject();
+					json.Key("ID"); json.Int(PROPERTY_H);
+					json.Key("VALUE"); json.Int(data->Message[11] | (data->Message[12] << 8));
+					json.EndObject();
+					json.StartObject();
+					json.Key("ID"); json.Int(PROPERTY_S);
+					json.Key("VALUE"); json.Int(data->Message[13] | (data->Message[14] << 8));
+					json.EndObject();
+					json.StartObject();
+					json.Key("ID"); json.Int(PROPERTY_L);
+					json.Key("VALUE"); json.Int(data->Message[15] | (data->Message[16] << 8));
+					json.EndObject();
+				}
+			json.EndArray();
 		json.EndObject();
 	json.EndObject();
 
@@ -578,6 +637,7 @@ void RequestTempHum(TS_GWIF_IncomingData *data) {
 //	SendData2ScreeTouch(st_enum_weatherIndoor, adr, 0, 0, 0, temp,
 //			hum, ppm25, 0, 0, 0, 0, 0, 0, 0);
 }
+
 
 
 

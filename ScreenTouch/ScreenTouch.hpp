@@ -16,6 +16,7 @@
 #define ST_HEADER_REQUEST_TIME			0xF00A
 #define ST_HEADER_REQUEST_TEMP_HUM	    0xF10A
 #define ST_HEADER_ONOFF_GROUP			0x440A
+#define ST_HEADER_ADJUST_GROUP			0x450A
 
 typedef struct Status_ST{
 	uint16_t 	header;
@@ -88,6 +89,8 @@ void RspScreenTouchTime(TS_GWIF_IncomingData *data);
 void RspScreenTouchDate(TS_GWIF_IncomingData *data);
 
 void RspScreenTouchStatusOnOffGroup(TS_GWIF_IncomingData *data);
+
+void RspScreenTouchAdjust(TS_GWIF_IncomingData * data);
 
 void RequestTime(TS_GWIF_IncomingData *data);
 

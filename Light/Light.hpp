@@ -18,6 +18,8 @@ void RspCCT(TS_GWIF_IncomingData *data);
 
 void RspDIM(TS_GWIF_IncomingData *data);
 
+void RspDim_CCT(TS_GWIF_IncomingData *data);
+
 void RspHSL(TS_GWIF_IncomingData *data);
 
 void RspAddDelGroup(TS_GWIF_IncomingData *data);

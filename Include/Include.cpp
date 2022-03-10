@@ -23,6 +23,11 @@ int ptempIndoor;
 uint16_t phumIndoor;
 uint16_t ppm25;
 
+uint16_t g_listAdrScene[MAX_DEV][2];
+
+
+typeCmd_t vrte_TypeCmd;
+
 uartSendDev_t AssignData(uint8_t *data,int length){
 	uartSendDev_t dataSendUart;
 	dataSendUart.length = length;
