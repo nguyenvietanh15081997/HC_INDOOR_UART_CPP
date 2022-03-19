@@ -6,6 +6,7 @@
 
 #define mqtt_host 			"10.10.10.1"
 #define mqtt_port 			1883
+#define mqtts_port 			8883
 #define mqtt_username 		"RD"
 
 #define TP_PUB           	"RD_STATUS"

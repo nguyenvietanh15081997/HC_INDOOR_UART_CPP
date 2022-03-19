@@ -149,8 +149,6 @@ void RspDIM(TS_GWIF_IncomingData *data) {
 	delete sendT;
 }
 
-//11 00 91 81 02 00 01 00 82 60 ff ff 20 4e 02 e3 00 0e 0a
-#define PRO
 void RspDim_CCT(TS_GWIF_IncomingData *data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	int dim = data->Message[7] | (data->Message[8] << 8);
@@ -335,28 +333,84 @@ void RspCallScene(TS_GWIF_IncomingData *data) {
 	}
 }
 
-void RspCallModeRgb(TS_GWIF_IncomingData *data){
+#define MODE_CCT			1
+#define MODE_RGB			0
+#define CALLMODE_RGB        0x1909
+void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint8_t modeRgb = data->Message[9];
-	if ((modeRgb == 1) || (modeRgb == 2) || (modeRgb == 3) || (modeRgb == 4)
-			|| (modeRgb == 5) || (modeRgb == 6)) {
-		StringBuffer dataMqtt;
-		Writer<StringBuffer> json(dataMqtt);
+	uint16_t dim = data->Message[9] | (data->Message[10] << 8);
+	uint16_t cct = data->Message[11] | (data->Message[12] << 8);
+	uint16_t l = data->Message[9] | (data->Message[10] << 8);
+	uint16_t h = data->Message[11] | (data->Message[12] << 8);
+	uint16_t s = data->Message[13] | (data->Message[14] << 8);
+	if(data->Message[7] == 2){
+		uint8_t status = (data->Message[8] >> 4) & 0x0F;
+		uint8_t mode = data->Message[8] & 0x0F;
 		json.StartObject();
-			json.Key("CMD");json.String("CALLMODE_RGB");
+			json.Key("CMD");json.String("UPDATE");
 			json.Key("DATA");
 			json.StartObject();
 				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-				json.Key("SRGBID");json.Int(modeRgb);
+				json.Key("PROPERTIES");
+				json.StartArray();
+					json.StartObject();
+						json.Key("ID"); json.Int(PROPERTY_ONOFF);
+						json.Key("VALUE"); json.Int(status);
+					json.EndObject();
+					if(mode == MODE_CCT){
+						json.StartObject();
+							json.Key("ID"); json.Int(PROPERTY_CCT);
+							json.Key("VALUE"); json.Int(Param2PrecentCCT(cct));
+						json.EndObject();
+						json.StartObject();
+							json.Key("ID"); json.Int(PROPERTY_DIM);
+							json.Key("VALUE"); json.Int(Param2PrecentDIM(dim));
+						json.EndObject();
+					} else if(mode == MODE_RGB){
+						json.StartObject();
+							json.Key("ID"); json.Int(PROPERTY_H);
+							json.Key("VALUE"); json.Int(h);
+						json.EndObject();
+						json.StartObject();
+							json.Key("ID"); json.Int(PROPERTY_S);
+							json.Key("VALUE"); json.Int(s);
+						json.EndObject();
+						json.StartObject();
+							json.Key("ID"); json.Int(PROPERTY_L);
+							json.Key("VALUE"); json.Int(l);
+						json.EndObject();
+					}
+				json.EndArray();
 			json.EndObject();
 		json.EndObject();
-
-	//	cout << dataMqtt.GetString() << endl;
 		string s = dataMqtt.GetString();
 		char * sendT = new char[s.length()+1];
 		strcpy(sendT, s.c_str());
 		mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
 		delete sendT;
+	} else if ((data->Message[7] == ((CALLMODE_RGB >> 8) & 0xFF))
+			&& (data->Message[8] == (CALLMODE_RGB & 0xFF))) {
+		uint8_t modeRgb = data->Message[9];
+		if ((modeRgb == 1) || (modeRgb == 2) || (modeRgb == 3) || (modeRgb == 4)
+				|| (modeRgb == 5) || (modeRgb == 6)) {
+			json.StartObject();
+				json.Key("CMD");json.String("CALLMODE_RGB");
+				json.Key("DATA");
+				json.StartObject();
+					json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+					json.Key("SRGBID");json.Int(modeRgb);
+				json.EndObject();
+			json.EndObject();
+
+		//	cout << dataMqtt.GetString() << endl;
+			string s = dataMqtt.GetString();
+			char * sendT = new char[s.length()+1];
+			strcpy(sendT, s.c_str());
+			mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+			delete sendT;
+		}
 	}
 }
 

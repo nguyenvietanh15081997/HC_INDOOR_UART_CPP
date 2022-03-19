@@ -34,6 +34,11 @@
 #define DIEU_KHIEN_CANH_M2(DC)			23001
 #define DIEU_KHIEN_CANH_AC				23002
 
+#define REM_MO							54
+#define REM_DONG						55
+#define REM_DUNG						56
+#define REM_PHANTRAM_MO					57
+
 void JsonHandle(char *data);
 
 #endif

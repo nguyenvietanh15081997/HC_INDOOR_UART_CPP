@@ -8,9 +8,8 @@
 #include "../ScreenTouch/ScreenTouch.hpp"
 #include "../SwitchOnOff/SwitchOnOff.hpp"
 #include "../ProcessUart/Provision.hpp"
-#include "../Mqtt/Mqtt.hpp"
 #include "../Curtain/Curtain.hpp"
-
+#include "../Mqtt/Mqtt.hpp"
 
 using namespace std;
 using namespace rapidjson;
@@ -153,39 +152,15 @@ static void Update(char *msg) {
 					adr = device["DEVICE_UNICAST_ID"].GetInt();
 					if(device.HasMember("TYPE_DV") && device["TYPE_DV"].IsInt()){
 						typeDev = device["TYPE_DV"].GetInt();
-						if (typeDev == LED_DOWNLIGHT_COB_HEP
-								|| typeDev == LED_DOWNLIGHT_COB_RONG
-								|| typeDev == LED_DOWNLIGHT_COB_TRANG_TRI
-								|| typeDev == LED_DOWNLIGHT_SMT
-								|| typeDev == LED_PANEL_TRON
-								|| typeDev == LED_PANEL_VUONG
-								|| typeDev == LED_OP_TRAN
-								|| typeDev == LED_OP_TUONG
-								|| typeDev == LED_CHIEU_GUONG
-								|| typeDev == LED_CHIEU_TRANH_GAN_TUONG
-								|| typeDev == LED_TRACKLIGHT
-								|| typeDev == LED_THA_TRAN
-								|| typeDev == LED_DAY_CCT
-								|| typeDev == LED_Tube_M16
-								|| typeDev == DEN_BAN
-								|| typeDev == LED_FLOODING) {
-							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
-						} else if (typeDev == LED_DAY_RGBCW
-								|| typeDev == LED_BULD
-								|| typeDev == LED_OP_TRAN_LOA) {
-							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
-							CmdUpdateLight(update_HSL, HCI_CMD_GATEWAY_CMD, adr, 12);
-						} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF){
-							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
+						if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04) {
 							Switch_Send_Uart(switch_enum_status, typeDev, adr,
 									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
 									NULL16);
+						} else {
+							CmdUpdateLight(HCI_CMD_GATEWAY_CMD,adr);
 						}
 					}
 				}
@@ -1402,12 +1377,16 @@ static void CalibCurtain (char * msg){
 	Document document;
 	document.Parse(msg);
 	uint16_t adr;
+	uint8_t type;
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID")) {
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
-				CURTAIN_Cmd(enum_curtain_calib, adr, NULL8, NULL8, NULL16);
+				if (data.HasMember("TYPE_CONTROL") && data["TYPE_CONTROL"].IsInt()){
+					type = data["TYPE_CONTROL"].GetInt();
+				}
+				CURTAIN_Cmd(enum_curtain_calib, adr, type, NULL8, NULL16);
 			}
 		}
 	}
@@ -1442,8 +1421,41 @@ static void DelHc(char *msg) {
 
 }
 
+static void DeviceControl(char *msg){
+	uint16_t adr = 0;
+	int id = -1;
+	int val = -1;
+	Document document;
+	document.Parse(msg);
+	if(document.HasMember("DATA") && document["DATA"].IsObject()){
+		const Value& data = document["DATA"];
+		if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()){
+			adr = data["DEVICE_UNICAST_ID"].GetInt();
+			if(data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
+				const Value& properties = data["PROPERTIES"];
+				for(SizeType i =0; i< properties.Size(); i++){
+					const Value& property = properties[i];
+					if (property.HasMember("ID") && property["ID"].IsInt()){
+						id = property["ID"].GetInt();
+						if (id == REM_PHANTRAM_MO){
+							if(property.HasMember("VALUE") && property["VALUE"].IsInt()){
+								val = property["VALUE"].GetInt();
+								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN_PERCENT, val, NULL16);
+							}
+						} else if (id == REM_DUNG){
+							CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_PAUSE, NULL8, NULL16);
+						}
+					}
+				}
+			}
+		}
+	}
+
+}
+
 #define MAX_FUNCTION					54
 functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
+		{"DEVICE_CONTROL",              (DeviceControl)},
 		{"ONOFF",						(OnOff)},
 		{"CCT",							(CCT_Set)},
 		{"DIM", 						(DIM_Set)},
@@ -1469,7 +1481,7 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"EDITICON_SCREEN_TOUCH",		(EditIconScreenTouch)},
 		{"DELSCENE_SCREEN_TOUCH",		(DelSceneScreenTouch)},
 		{"DELALL_SCENE_SCREENTOUCH",	(DelAllSceneScreenTouch)},
-		{"DEFAULT_ONOFF_SCREENTOUCH",	(DefaultOnOffScreenTouch)},
+		{"ROOM_DEVICE",					(DefaultOnOffScreenTouch)},
 		{"WEATHER_OUT_SCREEN_TOUCH",	(WeatherOutSreenTouch)},
 		{"WEATHER_IN_SCREEN_TOUCH",		(WeatherIndoorScreenTouch)},
 		{"TIME_SCREEN_TOUCH",			(TimeScreenTouch)},
@@ -1485,7 +1497,7 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"REQUEST_STATUS_SWITCH",		(RequestStatusSwitch)},
 		{"ADDSCENE_SOCKET1",			(AddSceneSocket1)},
 		{"ASK_PM_SENSOR",				(RequestStatusPmSensor)},
-		{"CURTAIN_CONTROL",				(ControlCurtain)},
+//		{"CURTAIN_CONTROL",				(ControlCurtain)},
 		{"CURTAIN_SCENE_SET",			(AddSceneCurtain)},
 		{"CURTAIN_SCENE_DEL",			(DelSceneCurtain)},
 		{"CURTAIN_STATUS_REQUEST",		(RequestStatusCurtain)},

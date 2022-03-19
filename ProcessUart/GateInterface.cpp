@@ -3,6 +3,7 @@
  */
 
 #include "GateInterface.hpp"
+#include "../RemoteMultiButtons/RemoteMultiButtons.hpp"
 #include "../Curtain/Curtain.hpp"
 #include "../Remote/Remote.hpp"
 #include "../Sensor/Sensor.hpp"
@@ -260,27 +261,33 @@ typedef struct processRsp0x52{
 	cb_rsp_function_t 	rspFuncProcess0x52;
 } proccessRsp0x52_t;
 
-#define MAX_FUNCTION0x52_RSP			19
+#define MAX_FUNCTION0x52_RSP			25
 proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
-		{REMOTE_MODULE_AC_TYPE,				RspRemoteStatus},
-		{REMOTE_MODULE_DC_TYPE,				RspRemoteStatus},
-		{SCREEN_TOUCH_MODULE_TYPE,			RspScreenTouchStatus},
-		{POWER_TYPE,						RspPowerStatusSensor},
-		{ST_HEADER_ONOFF_GROUP,				RspScreenTouchStatusOnOffGroup},
-		{ST_HEADER_ADJUST_GROUP,			RspScreenTouchAdjust},
-		{PIR_SENSOR_MODULE_TYPE,			RspPirSenSor},
-		{PM_SENSOR_MODULE_TEMP_HUM_TYPE,	RspPmSensorTempHum},
-		{PM_SENSOR_MODULE_PM_TYPE,			RspPmSensor},
-		{TEMP_HUM_MODULE_TYPE,				RspTempHumSensor},
-		{DOOR_SENSOR_MODULE_TYPE,			RspDoorStatus},
-		{DOOR_SENSOR_HANGON_MODULE_TYPE,	RspDoorHangOn},
-		{SMOKE_SENSOR_MODULE_TYPE,			RspSmoke},
-		{LIGHT_SENSOR_MODULE_TYPE,			RspLightSensor},
-		{SWITCH_1_CONTROL,					Rsp_Switch_Status},
-		{SWITCH_2_CONTROL,					Rsp_Switch_Status},
-		{SWITCH_3_CONTROL,					Rsp_Switch_Status},
-		{SWITCH_4_CONTROL,					Rsp_Switch_Status},
-		{CURTAIN_STATUS_RSP,				CURTAIN_RSP_PressBT}
+		{REMOTE_MODULE_AC_TYPE,					RspRemoteStatus},
+		{REMOTE_MODULE_DC_TYPE,					RspRemoteStatus},
+		{SCREEN_TOUCH_MODULE_TYPE,				RspScreenTouchStatus},
+		{POWER_TYPE,							RspPowerStatusSensor},
+		{ST_HEADER_ONOFF_GROUP,					RspScreenTouchStatusOnOffGroup},
+		{ST_HEADER_ADJUST_GROUP,				RspScreenTouchAdjust},
+		{PIR_SENSOR_MODULE_TYPE,				RspPirSenSor},
+		{PM_SENSOR_MODULE_TEMP_HUM_TYPE,		RspPmSensorTempHum},
+		{PM_SENSOR_MODULE_PM_TYPE,				RspPmSensor},
+		{TEMP_HUM_MODULE_TYPE,					RspTempHumSensor},
+		{DOOR_SENSOR_MODULE_TYPE,				RspDoorStatus},
+		{DOOR_SENSOR_HANGON_MODULE_TYPE,		RspDoorHangOn},
+		{SMOKE_SENSOR_MODULE_TYPE,				RspSmoke},
+		{LIGHT_SENSOR_MODULE_TYPE,				RspLightSensor},
+		{SWITCH_1_CONTROL,						Rsp_Switch_Status},
+		{SWITCH_2_CONTROL,						Rsp_Switch_Status},
+		{SWITCH_3_CONTROL,						Rsp_Switch_Status},
+		{SWITCH_4_CONTROL,						Rsp_Switch_Status},
+		{CURTAIN_STATUS_RSP,					CURTAIN_RSP_PressBT},
+		{REMOTE_MUL_RSP_SCENE_ACTIVE_DEFAULT, 	RemoteMul_Rsp_CallSceneDefault},
+		{REMOTE_MUL_RSP_SCENE_ACTIVE, 			RemoteMul_Rsp_CallScene},
+		{REMOTE_MUL_RSP_ONOFF_GROUP,        	RemoteMul_Rsp_OnOffGroup},
+		{REMOTE_MUL_RSP_TIMER, 					RemoteMul_Rsp_TIMER},
+		{REMOTE_MUL_RSP_UP_DOWN,            	RemoteMul_Rsp_CCTDIMRGB},
+		{REMOTE_MUL_RSP_SWITCH_STATUS, 			RemoteMul_Rsp_SwitchStatusLight}
 };
 
 typedef struct processRsp{
@@ -300,7 +307,7 @@ proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
 		{SCENE_STATUS,						RspCallScene},
 		{G_BATTERY_STATUS,					RspPowerRemoteStatus},
 		{NODE_RESET_STATUS,					RspResetNode},
-		{LIGHTNESS_LINEAR_STATUS,			RspCallModeRgb}
+		{LIGHTNESS_LINEAR_STATUS,			RspCallModeRgb_UpdateLight}
 };
 
 typedef struct processRspVendor{

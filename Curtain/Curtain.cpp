@@ -21,6 +21,11 @@ static uint8_t curtain_parRetry_cnt = 0x00;
 static uint8_t curtain_parRsp_Max = 0x00;
 
 static void CURTAIN_Control(uint8_t typeControl, uint8_t percentOpen) {
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = CURTAIN_CONTROL & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (CURTAIN_CONTROL >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[5] = typeControl;
@@ -30,6 +35,11 @@ static void CURTAIN_Control(uint8_t typeControl, uint8_t percentOpen) {
 }
 
 static void CURTAIN_Scene_Set(uint16_t idScene) {
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = CURTAIN_SCENE_SET & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (CURTAIN_SCENE_SET >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[5] = idScene & 0xFF;
@@ -37,6 +47,11 @@ static void CURTAIN_Scene_Set(uint16_t idScene) {
 }
 
 static void CURTAIN_Scene_Del(uint16_t idScene) {
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = CURTAIN_SCENE_DEL & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (CURTAIN_SCENE_DEL >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[5] = idScene & 0xFF;
@@ -44,17 +59,32 @@ static void CURTAIN_Scene_Del(uint16_t idScene) {
 }
 
 static void CURTAIN_Status_Request(){
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = CURTAIN_STATUS_RSP & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (CURTAIN_STATUS_RSP >> 8) & 0xFF;
 }
 
 static void CURTAIN_Calib(uint8_t status) {
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = CURTAIN_CALIB & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (CURTAIN_CALIB >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[5] = status;
 }
 
 static void CURTAIN_Config_Motor(uint8_t typeMotor) {
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = CURTAIN_CONFIG_MOTOR & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (CURTAIN_CONFIG_MOTOR >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[5] = typeMotor;
@@ -114,6 +144,7 @@ void CURTAIN_Cmd(curtain_cmd_t typeCmd, uint16_t adr, uint8_t typeControl, uint8
 	pthread_mutex_unlock(&vrpth_SendUart);
 }
 
+static uint8_t CURTAIN_listTypeCmd[4] ={55,54,56,57};
 void CURTAIN_RSP_Control(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	uint8_t typeControl = data->Message[10];
@@ -122,18 +153,17 @@ void CURTAIN_RSP_Control(TS_GWIF_IncomingData *data) {
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD"); json.String("CURTAIN_CONTROL");
+		json.Key("CMD"); json.String("DEVICE_CONTROL");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
-			json.Key("CURTAIN_STATUS");
-			json.StartObject();
-				json.Key("TYPE"); json.Int(typeControl);
-				if (typeControl == CURTAIN_OPEN_PERCENT) {
-					json.Key("PERCENT");
-					json.Int(percent);
-				}
-			json.EndObject();
+			json.Key("PROPERTIES");
+			json.StartArray();
+				json.StartObject();
+					json.Key("ID"); json.Int(CURTAIN_listTypeCmd[typeControl]);
+					json.Key("VALUE"); json.Int(percent);
+				json.EndObject();
+			json.EndArray();
 		json.EndObject();
 	json.EndObject();
 
@@ -262,21 +292,18 @@ void CURTAIN_RSP_ConfigMotor(TS_GWIF_IncomingData *data) {
 
 void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint8_t status  = data->Message[10];
-	uint8_t percent = data->Message[11];
+	uint8_t status  = data->Message[8];
+	uint8_t percent = data->Message[9];
 
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD"); json.String("CURTAIN_CONTROL");
+		json.Key("CMD"); json.String("CURTAIN_PRESS");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
-			json.Key("CURTAIN_STATUS");
-			json.StartObject();
-				json.Key("TYPE"); json.Int(status);
-				json.Key("PERCENT"); json.Int(percent);
-			json.EndObject();
+			json.Key("TYPE"); json.Int(status);
+			json.Key("PERCENT"); json.Int(percent);
 		json.EndObject();
 	json.EndObject();
 

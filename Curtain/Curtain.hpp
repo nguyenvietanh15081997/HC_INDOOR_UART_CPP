@@ -20,7 +20,8 @@
 #define CURTAIN_CONFIG_MOTOR 	0x0511
 
 #define CURTAIN_OPEN			01
-#define CURTAIN_CLOSE			02
+#define CURTAIN_CLOSE			00
+#define CURTAIN_PAUSE			02
 #define CURTAIN_OPEN_PERCENT	03
 
 typedef enum{

@@ -40,7 +40,7 @@ void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_
 	memcpy(dataPush.dataMqtt,message->payload,lengthMsg+1);
 	Document document;
 	document.Parse(dataPush.dataMqtt);
-	//slog_info("<mqtt>receive: %s", dataPush.dataMqtt);
+//	slog_info("<mqtt>receive: %s", dataPush.dataMqtt);
 	if(document.IsObject()){
 		ring_push_head((ringbuffer_t *)&vr_RingBufDataMqtt,(void *)(&dataPush));
 	}
@@ -66,10 +66,22 @@ static void GetPassMqtt(char* nameFile){
 	}
 }
 
-void* MQTT_Thread(void *argv) {
+static bool CheckFile (const std::string& name) {
+    if (FILE *file = fopen(name.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }
+}
 
-	char * locationFile = "/etc/PassMqtt.txt";
-	GetPassMqtt(locationFile);
+void* MQTT_Thread(void *argv) {
+	bool CheckMqtt = false;
+	CheckMqtt = CheckFile("/etc/PassMqtt.txt");
+	if(CheckMqtt){
+		char * locationFile = "/etc/PassMqtt.txt";
+		GetPassMqtt(locationFile);
+	}
 
 	slog_print(SLOG_INFO, 1, "Thread mqtt start");
 	ring_init(&vr_RingBufDataMqtt,MAXDATAMQTT,sizeof(struct bufferDataMqtt));
@@ -86,9 +98,16 @@ void* MQTT_Thread(void *argv) {
 		mosquitto_connect_callback_set(mosq, connect_callback);
 		mosquitto_message_callback_set(mosq, message_callback);
 
-		abc = mosquitto_username_pw_set(mosq, mqtt_username, (const char *)mqtt_password);
-		rc = mosquitto_connect(mosq, mqtt_host, mqtt_port, 60);
-
+		if(CheckMqtt == false){
+			cout << "check file MQTT: " << CheckMqtt << endl;
+			rc = mosquitto_tls_set(mosq, "/etc/mosquitto/ca.crt", NULL, NULL, NULL, NULL);
+			rc = mosquitto_tls_insecure_set(mosq, false);
+			rc = mosquitto_connect(mosq, mqtt_host, mqtts_port, 60);
+		}
+		else{
+			rc = mosquitto_username_pw_set(mosq, mqtt_username, (const char *)mqtt_password);
+			rc = mosquitto_connect(mosq, mqtt_host, mqtt_port, 60);
+		}
 		mosquitto_subscribe(mosq, NULL, TP_SUB, qos);
 		while (run) {
 			rc = abc = mosquitto_loop(mosq, -1, 1);

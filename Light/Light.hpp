@@ -28,7 +28,7 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data);
 
 void RspCallScene(TS_GWIF_IncomingData *data) ;
 
-void RspCallModeRgb(TS_GWIF_IncomingData *data);
+void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data);
 
 void RspSaveGw(TS_GWIF_IncomingData *data);
 

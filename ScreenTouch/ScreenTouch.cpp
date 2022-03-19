@@ -536,12 +536,12 @@ void RspScreenTouchStatusOnOffGroup(TS_GWIF_IncomingData *data){
 #define ST_ADJUST_HSL	2
 void RspScreenTouchAdjust(TS_GWIF_IncomingData * data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint16_t groupId = data->Message[8] | (data->Message[9] << 8);
+	uint16_t groupId = (data->Message[8]  << 8) | data->Message[9];
 	uint8_t typeAdjust = data->Message[10];
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("ADJUST_GROUP_SCREEN_TOUCH");
+		json.Key("CMD");json.String("ADJUST_GROUP");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);

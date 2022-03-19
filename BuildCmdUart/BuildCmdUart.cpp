@@ -271,7 +271,9 @@ static void CmdOnOff_Get(uint16_t adr){
 	vrts_CMD_STRUCTURE.opCode[1] = (G_ONOFF_GET >> 8) & 0xFF;
 }
 
-void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
+#define UPDATE_HEADER		(0x02)
+#define UPDATE_LENGTH		(18)
+void CmdUpdateLight(uint16_t cmd, uint16_t adr) {
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd>>8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode00[0] = 0;
@@ -280,15 +282,16 @@ void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLen
 	vrts_CMD_STRUCTURE.opCode00[3] = 0;
 	vrts_CMD_STRUCTURE.retry_cnt = 0;
 	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
-	if (type  == update_OnOff){
-		CmdOnOff_Get(adr);
-	} else if (type == update_DIM_CCT){
-		CmdLightness_CCT_Get(adr);
-	} else if (type == update_HSL){
-		CmdHSL_Get(adr);
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = LIGHTNESS_LINEAR_SET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (LIGHTNESS_LINEAR_SET >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = UPDATE_HEADER;
+	for (int i = 0; i < 7; i++) {
+		vrts_CMD_STRUCTURE.para[1+i] = 0;
 	}
 	uartSendDev_t vrts_UartUpdate;
-	vrts_UartUpdate.length = cmdLength;
+	vrts_UartUpdate.length = 18;
 	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
 	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
 	pthread_mutex_trylock(&vrpth_SendUart);
