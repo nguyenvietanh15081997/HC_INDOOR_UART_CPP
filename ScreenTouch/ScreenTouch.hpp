@@ -2,6 +2,7 @@
 #define SCREENTOUCH_HPP_
 
 #include "../Include/Include.hpp"
+#include "../logging/slog.h"
 
 #define ST_HEADER_ADD_SCENE 			0x010A
 #define ST_HEADER_DEL_SCENE 			0x020A

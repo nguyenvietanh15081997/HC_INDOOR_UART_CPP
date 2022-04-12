@@ -9,6 +9,7 @@
 #define SWITCHONOFF_SWITCHONOFF_HPP_
 
 #include "../Include/Include.hpp"
+#include "../logging/slog.h"
 
 /*header for switch touch*/
 #define SWITCH_4_CONTROL				(0x000b)

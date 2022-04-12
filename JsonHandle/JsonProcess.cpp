@@ -169,6 +169,62 @@ static void Update(char *msg) {
 	}
 }
 
+//static void Update(char *msg) {
+//	Document document;
+//	document.Parse(msg);
+//	uint16_t adr = 0;
+//	uint16_t typeDev = 0;
+//	if (document.IsObject()) {
+//		if (document.HasMember("DATA") && document["DATA"].IsArray()) {
+//			const Value &data = document["DATA"];
+//			for(rapidjson::size_t i=0; i<data.Size(); i++){
+//				const Value &device = data[i];
+//				if(device.HasMember("DEVICE_UNICAST_ID") && device["DEVICE_UNICAST_ID"].IsInt()){
+//					adr = device["DEVICE_UNICAST_ID"].GetInt();
+//					if(device.HasMember("TYPE_DV") && device["TYPE_DV"].IsInt()){
+//						typeDev = device["TYPE_DV"].GetInt();
+//						if (typeDev == LED_DOWNLIGHT_COB_HEP
+//								|| typeDev == LED_DOWNLIGHT_COB_RONG
+//								|| typeDev == LED_DOWNLIGHT_COB_TRANG_TRI
+//								|| typeDev == LED_DOWNLIGHT_SMT
+//								|| typeDev == LED_PANEL_TRON
+//								|| typeDev == LED_PANEL_VUONG
+//								|| typeDev == LED_OP_TRAN
+//								|| typeDev == LED_OP_TUONG
+//								|| typeDev == LED_CHIEU_GUONG
+//								|| typeDev == LED_CHIEU_TRANH_GAN_TUONG
+//								|| typeDev == LED_TRACKLIGHT
+//								|| typeDev == LED_THA_TRAN
+//								|| typeDev == LED_DAY_CCT
+//								|| typeDev == LED_Tube_M16
+//								|| typeDev == DEN_BAN
+//								|| typeDev == LED_FLOODING) {
+//							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+//							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
+//						} else if (typeDev == LED_DAY_RGBCW
+//								|| typeDev == LED_BULD
+//								|| typeDev == LED_OP_TRAN_LOA) {
+//							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+//							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
+//							CmdUpdateLight(update_HSL, HCI_CMD_GATEWAY_CMD, adr, 12);
+//						} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF){
+//							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+//						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
+//								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
+//								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
+//								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04) {
+//							Switch_Send_Uart(switch_enum_status, typeDev, adr,
+//									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
+//									NULL16);
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
+//}
+
+
 static void ResetNode(char *msg) {
 	Document document;
 	document.Parse(msg);
@@ -200,16 +256,20 @@ static void OnOff(char *msg) {
 	uint16_t time = 0;
 	uint16_t adr;
 	uint16_t valueOnOff;
+	bool ack = true;
 	if (document.IsObject()) {
 		if (document.HasMember("TIME")) {
 			time = document["TIME"].GetInt();
+		}
+		if (document.HasMember("ACK") && document["ACK"].IsBool()){
+			ack = document["ACK"].GetBool();
 		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("VALUE_ONOFF")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				valueOnOff = data["VALUE_ONOFF"].GetInt();
-				if (!startProcessRoom) {
+				if (ack) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, ControlOnOff_typedef, adr,
 							NULL8, valueOnOff, NULL16, NULL16, NULL16,
 							NULL16, NULL16, NULL16, NULL16, GetTransition(time),
@@ -231,16 +291,20 @@ static void CCT_Set(char *msg) {
 	uint16_t time = 0;
 	uint16_t adr;
 	uint16_t valueCCT;
+	bool ack = true;
 	if (document.IsObject()) {
 		if (document.HasMember("TIME")) {
 			time = document["TIME"].GetInt();
+		}
+		if (document.HasMember("ACK") && document["ACK"].IsBool()){
+			ack = document["ACK"].GetBool();
 		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("VALUE_CCT")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				valueCCT = data["VALUE_CCT"].GetInt();
-				if(!startProcessRoom){
+				if(ack){
 					FunctionPer(HCI_CMD_GATEWAY_CMD, CCT_Set_typedef, adr,
 							NULL8, NULL8, NULL16, Percent2ParamCCT(valueCCT),
 							NULL16, NULL16, NULL16, NULL16, NULL16,
@@ -250,7 +314,7 @@ static void CCT_Set(char *msg) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, CCT_Set_NoAck_typedef, adr,
 							NULL8, NULL8, NULL16, Percent2ParamCCT(valueCCT),
 							NULL16, NULL16, NULL16, NULL16, NULL16,
-							GetTransition(65535), 19);
+							GetTransition(time), 19);
 				}
 			}
 		}
@@ -263,16 +327,20 @@ static void DIM_Set(char *msg) {
 	uint16_t time = 0;
 	uint16_t adr;
 	uint16_t valueDim;
+	bool ack = true;
 	if (document.IsObject()) {
 		if (document.HasMember("TIME")) {
 			time = document["TIME"].GetInt();
+		}
+		if (document.HasMember("ACK") && document["ACK"].IsBool()) {
+			ack = document["ACK"].GetBool();
 		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("VALUE_DIM")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				valueDim = data["VALUE_DIM"].GetInt();
-				if (!startProcessRoom) {
+				if (ack) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, Lightness_Set_typedef, adr,
 							NULL8, NULL8, Percent2ParamDIM(valueDim),
 							NULL16, NULL16, NULL16, NULL16, NULL16, NULL16,
@@ -282,7 +350,7 @@ static void DIM_Set(char *msg) {
 							Lightness_Set_NoAck_typedef, adr, NULL8, NULL8,
 							Percent2ParamDIM(valueDim),
 							NULL16, NULL16, NULL16, NULL16, NULL16, NULL16,
-							GetTransition(65535), 17);
+							GetTransition(time), 17);
 				}
 			}
 		}
@@ -321,9 +389,13 @@ static void HSL_Set(char *msg) {
 	uint16_t valueH;
 	uint16_t valueS;
 	uint16_t valueL;
+	bool ack = true;
 	if (document.IsObject()) {
 		if (document.HasMember("TIME")) {
 			time = document["TIME"].GetInt();
+		}
+		if (document.HasMember("ACK") && document["ACK"].IsBool()) {
+			ack = document["ACK"].GetBool();
 		}
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
@@ -333,7 +405,7 @@ static void HSL_Set(char *msg) {
 				valueH = data["VALUE_H"].GetInt();
 				valueS = data["VALUE_S"].GetInt();
 				valueL = data["VALUE_L"].GetInt();
-				if (!startProcessRoom) {
+				if (ack) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, HSL_Set_typedef, adr,
 							NULL8, NULL8, NULL16, NULL16, NULL16, NULL16,
 							valueL, valueH, valueS, GetTransition(time), 21);
@@ -526,6 +598,9 @@ static void DelScene(char *msg) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, DelSence_typedef, adrCct,
 							NULL8, NULL8, NULL16, NULL16, sceneId, NULL16,
 							NULL16, NULL16, NULL16, NULL16, 14);
+					while (pthread_mutex_trylock(&vrpth_DelScene) != 0) {
+						usleep(100);
+					};
 					for (int n = 0; n < MAX_DEV; n++) {
 						if(g_listAdrScene[n][0] == 0 && g_listAdrScene[n][1] == 0){
 							g_listAdrScene[n][0] = adrCct;
@@ -533,6 +608,13 @@ static void DelScene(char *msg) {
 							break;
 						}
 					}
+//					slog_info("Ghi mang");
+//					for(int m = 0;m < MAX_DEV; m++){
+//						if(g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0){
+//							slog_print(SLOG_INFO, 1,"<%d>:%d- %d- %d",m,adrCct, g_listAdrScene[m][0], g_listAdrScene[m][1]);
+//						}
+//					}
+					pthread_mutex_unlock(&vrpth_DelScene);
 				}
 			}
 			if (data.HasMember("DEVICE_RGB_UNICAST_ID") && data["DEVICE_RGB_UNICAST_ID"].IsArray()) {
@@ -560,18 +642,29 @@ static void CallScene(char *msg) {
 	document.Parse(msg);
 	uint16_t sceneId;
 	uint16_t transition;
+	bool ack = true;
 	if(document.IsObject()){
 		if(document.HasMember("TIME")){
 			transition = document["TIME"].GetInt();
+		}
+		if (document.HasMember("ACK") && document["ACK"].IsBool()) {
+			ack = document["ACK"].GetBool();
 		}
 		if(document.HasMember("DATA")){
 			const Value &data = document["DATA"];
 			if(data.HasMember("SCENEID")){
 				sceneId = data["SCENEID"].GetInt();
-				FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
-						NULL8, NULL8, NULL16, NULL16, sceneId,
-						NULL16, NULL16, NULL16, NULL16,
-						GetTransition(transition), 17);
+				if (ack) {
+					FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
+							NULL8, NULL8, NULL16, NULL16, sceneId,
+							NULL16, NULL16, NULL16, NULL16,
+							GetTransition(transition), 17);
+				} else {
+					FunctionPer(HCI_CMD_GATEWAY_CMD, CallScene_NoAck_typedef, 65535,
+							NULL8, NULL8, NULL16, NULL16, sceneId,
+							NULL16, NULL16, NULL16, NULL16,
+							GetTransition(transition), 17);
+				}
 			}
 		}
 	}

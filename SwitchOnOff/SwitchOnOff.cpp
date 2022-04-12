@@ -17,19 +17,29 @@ using namespace rapidjson;
 #define SWITCH_LENGTH_SCENE_DEL		19
 #define SWITCH_LENGTH_STATUS		17
 
+#define TYPE_BNL					22005
+
 static uint16_t switch_cmd = HCI_CMD_GATEWAY_CMD;
 static uint8_t switch_parRetry_cnt = 0x00;
 static uint8_t switch_parRsp_Max = 0x00;
 
-static uint16_t listTypeSw[4] = { 22001, 22002, 22003, 22004 };
-static uint16_t listOpcodeControlSW[4] = { SWITCH_1_CONTROL, SWITCH_2_CONTROL, SWITCH_3_CONTROL, SWITCH_4_CONTROL };
-static uint16_t listOpcodeSceneSet[4] = { SWITCH_1_SCENE_SET, SWITCH_2_SCENE_SET, SWITCH_3_SCENE_SET, SWITCH_4_SCENE_SET };
-static uint16_t listOpcodeSceneDel[4] = { SWITCH_1_SCENE_DEL, SWITCH_2_SCENE_DEL, SWITCH_3_SCENE_DEL, SWITCH_4_SCENE_DEL };
-static uint16_t listOpcodeStatus[4] = { SWITCH_1_STATUS, SWITCH_2_STATUS, SWITCH_3_STATUS, SWITCH_4_STATUS };
+static uint16_t listTypeSw[5] = { 22001, 22005, 22002, 22003, 22004 };
+static uint16_t listOpcodeControlSW[5] = { SWITCH_1_CONTROL, SWITCH_1_CONTROL, SWITCH_2_CONTROL, SWITCH_3_CONTROL, SWITCH_4_CONTROL };
+static uint16_t listOpcodeSceneSet[5] = { SWITCH_1_SCENE_SET, SWITCH_1_SCENE_SET, SWITCH_2_SCENE_SET, SWITCH_3_SCENE_SET, SWITCH_4_SCENE_SET };
+static uint16_t listOpcodeSceneDel[5] = { SWITCH_1_SCENE_DEL, SWITCH_1_SCENE_DEL, SWITCH_2_SCENE_DEL, SWITCH_3_SCENE_DEL, SWITCH_4_SCENE_DEL };
+static uint16_t listOpcodeStatus[5] = { SWITCH_1_STATUS, SWITCH_1_STATUS, SWITCH_2_STATUS, SWITCH_3_STATUS, SWITCH_4_STATUS };
 
+typedef enum {
+	switch1,
+	binhnonglanh,
+	nullDev
+}typeDev_e;
+typeDev_e typeDev = nullDev;
+
+#define NUM_DEV  5
 char IndexType (uint16_t typeSw){
 	char indexType = -1;
-	for(int i = 0;i<4;i++){
+	for(int i = 0;i<NUM_DEV;i++){
 		if(typeSw == listTypeSw[i]){
 			indexType = i;
 			break;
@@ -40,7 +50,7 @@ char IndexType (uint16_t typeSw){
 
 char IndexOpcode (uint16_t opcode){
 	char indexOpcode = -1;
-	for(int i = 0;i<4;i++){
+	for(int i = 0;i<NUM_DEV;i++){
 		if ((opcode == listOpcodeControlSW[i])
 				|| (opcode == listOpcodeSceneSet[i])
 				|| (opcode == listOpcodeSceneDel[i])
@@ -146,7 +156,7 @@ void Switch_Send_Uart(switch_enum_cmd typeCmd, uint16_t typeSw, uint16_t adr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = SWITCH_TIME_WAIT;
-	pthread_mutex_trylock(&vrpth_SendUart);
+	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
 	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&vrpth_SendUart);
@@ -176,6 +186,7 @@ void Rsp_Switch_Control(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -212,6 +223,7 @@ void Rsp_Switch_Scene_Set(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -237,6 +249,7 @@ void Rsp_Switch_Scene_Del(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -264,6 +277,7 @@ void Rsp_Switch_Status(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -307,5 +321,6 @@ void Rsp_Switch_RequestStatus(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }

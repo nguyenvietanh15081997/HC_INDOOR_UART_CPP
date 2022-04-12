@@ -9,6 +9,7 @@
 #define REMOTE_REMOTE_HPP_
 
 #include "../Include/Include.hpp"
+#include "../logging/slog.h"
 
 typedef struct remotersp{
 	uint8_t   	typeDev[2];

@@ -11,6 +11,7 @@
 #include "../Include/Include.hpp"
 #include "../Mqtt/Mqtt.hpp"
 #include "../ProcessUart/OpCode.h"
+#include "../logging/slog.h"
 
 #define CURTAIN_CONTROL			0x0011
 #define CURTAIN_STATUS_RSP		0x0311

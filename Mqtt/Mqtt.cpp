@@ -23,7 +23,7 @@ using namespace rapidjson;
 
 int mqtt_send(struct mosquitto *mosq, char *topic, char *msg) {
 	mosquitto_publish(mosq, NULL, topic, strlen(msg), msg, qos, 0);
-	slog_info("<mqtt>send: %s", msg);
+//	slog_info("<mqtt>send: %s", msg);
 	return 0;
 }
 

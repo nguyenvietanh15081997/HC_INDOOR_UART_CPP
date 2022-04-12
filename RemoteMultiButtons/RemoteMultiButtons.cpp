@@ -100,7 +100,7 @@ void RemoteMul_Cmd(remote_Cmd_t typeCmd, uint16_t adr, uint16_t idGroup, uint8_t
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = REMOTE_MUL_TIME_WAIT;
-	pthread_mutex_trylock(&vrpth_SendUart);
+	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
 	bufferDataUart.push_back(vrts_DataUartSend);
 //	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&vrpth_SendUart);
@@ -128,22 +128,24 @@ void RemoteMul_Rsp_OnOffGroup(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
 void RemoteMul_Rsp_CallScene(TS_GWIF_IncomingData * data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint16_t idGroup = data->Message[8] | (data->Message[9] << 8);
+//	uint16_t idGroup = data->Message[8] | (data->Message[9] << 8);
 	uint16_t idscene = data->Message[10] | (data->Message[11] << 8);
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("REMOTE_MUL_CALLSCENE");
+		json.Key("CMD");json.String("REMOTE");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-			json.Key("GROUPID"); json.Int(idGroup);
-			json.Key("SCENEID");json.Int(idscene);
+			json.Key("BUTTON_VALUE"); json.String("BUTTON_1");
+			json.Key("MODE_VALUE");json.Int(1);
+			json.Key("SCENEID"); json.Int(idscene);
 		json.EndObject();
 	json.EndObject();
 
@@ -152,6 +154,7 @@ void RemoteMul_Rsp_CallScene(TS_GWIF_IncomingData * data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -180,6 +183,7 @@ void RemoteMul_Rsp_TIMER(TS_GWIF_IncomingData * data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -208,6 +212,7 @@ void RemoteMul_Rsp_CCTDIMRGB(TS_GWIF_IncomingData * data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -232,6 +237,7 @@ void RemoteMul_Rsp_SwitchStatusLight(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -267,5 +273,6 @@ void RemoteMul_Rsp_CallSceneDefault(TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }

@@ -37,6 +37,7 @@ void RspDoorSensorAddScene(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -60,6 +61,7 @@ void RspDoorSensorDelScene(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -84,6 +86,7 @@ void RspDoorHangOn(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -108,6 +111,7 @@ void RspDoorStatus(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -139,6 +143,7 @@ void RspPmSensorTempHum(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -167,6 +172,7 @@ void RspPmSensor(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -204,6 +210,7 @@ void RspTempHumSensor(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -235,6 +242,7 @@ void RspPirSenSor(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -273,6 +281,7 @@ void RspLightSensor(TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -298,6 +307,7 @@ void RspSmoke(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -351,6 +361,7 @@ void RspPir_LightAddScene(TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -374,6 +385,7 @@ void RspPir_LightDelScene(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -396,6 +408,7 @@ void RspPirTimeAction(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -419,5 +432,6 @@ void RspPowerStatusSensor(TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }

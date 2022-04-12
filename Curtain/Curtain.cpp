@@ -138,9 +138,8 @@ void CURTAIN_Cmd(curtain_cmd_t typeCmd, uint16_t adr, uint8_t typeControl, uint8
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = CURTAIN_TIME_WAIT;
-	pthread_mutex_trylock(&vrpth_SendUart);
+	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
 	bufferDataUart.push_back(vrts_DataUartSend);
-//	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&vrpth_SendUart);
 }
 
@@ -172,6 +171,7 @@ void CURTAIN_RSP_Control(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -195,6 +195,7 @@ void CURTAIN_RSP_Scene_Set(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -218,6 +219,7 @@ void CURTAIN_RSP_Scene_Del(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -241,6 +243,7 @@ void CURTAIN_RSP_Status_Request(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -264,6 +267,7 @@ void CURTAIN_RSP_Calib(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -287,6 +291,7 @@ void CURTAIN_RSP_ConfigMotor(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -312,5 +317,6 @@ void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }

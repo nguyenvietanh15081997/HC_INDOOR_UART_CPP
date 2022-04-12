@@ -6,6 +6,7 @@
 #define SENSOR_SENSOR_HPP_
 
 #include "../Include/Include.hpp"
+#include "../logging/slog.h"
 
 /*Frame of rsp data sensor*/
 typedef struct lightsensorRsp

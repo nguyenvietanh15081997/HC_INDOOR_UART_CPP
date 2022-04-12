@@ -100,13 +100,24 @@ static void CmdAddSence(uint16_t uniAdrSence, uint16_t senceID, uint8_t sRgbid) 
 	vrts_CMD_STRUCTURE.para[3] = vrts_CMD_STRUCTURE.para[4] = 0;
 }
 
-static void CmdCallSence(uint16_t adr,uint16_t senceId, uint8_t sRgbId, uint16_t transition) {
+static void CmdCallSence(uint16_t adr,uint16_t sceneId, uint8_t sRgbId, uint16_t transition) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = SCENE_RECALL & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (SCENE_RECALL >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = senceId & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = (senceId >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = sceneId & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = (sceneId >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = sRgbId;
+	vrts_CMD_STRUCTURE.para[3] = transition & 0xFF;
+	vrts_CMD_STRUCTURE.para[4] = (transition >> 8) & 0xFF;
+}
+static void CmdCallSceneNoAck (uint16_t adr, uint16_t sceneId, uint8_t sRgbId, uint16_t transition) {
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = SCENE_RECALL_NOACK & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (SCENE_RECALL_NOACK >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = sceneId & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = (sceneId >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[2] = sRgbId;
 	vrts_CMD_STRUCTURE.para[3] = transition & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = (transition >> 8) & 0xFF;
@@ -294,12 +305,39 @@ void CmdUpdateLight(uint16_t cmd, uint16_t adr) {
 	vrts_UartUpdate.length = 18;
 	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
 	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
-	pthread_mutex_trylock(&vrpth_SendUart);
-	if(!gvrb_Provision){
-		bufferUartUpdate.push_back(vrts_UartUpdate);
+	if (pthread_mutex_trylock(&vrpth_SendUart) == 0) {
+		if (!gvrb_Provision) {
+			bufferUartUpdate.push_back(vrts_UartUpdate);
+		}
+		pthread_mutex_unlock(&vrpth_SendUart);
 	}
-	pthread_mutex_unlock(&vrpth_SendUart);
 }
+//void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
+//	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
+//	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd>>8) & 0xFF;
+//	vrts_CMD_STRUCTURE.opCode00[0] = 0;
+//	vrts_CMD_STRUCTURE.opCode00[1] = 0;
+//	vrts_CMD_STRUCTURE.opCode00[2] = 0;
+//	vrts_CMD_STRUCTURE.opCode00[3] = 0;
+//	vrts_CMD_STRUCTURE.retry_cnt = 0;
+//	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
+//	if (type  == update_OnOff){
+//		CmdOnOff_Get(adr);
+//	} else if (type == update_DIM_CCT){
+//		CmdLightness_CCT_Get(adr);
+//	} else if (type == update_HSL){
+//		CmdHSL_Get(adr);
+//	}
+//	uartSendDev_t vrts_UartUpdate;
+//	vrts_UartUpdate.length = cmdLength;
+//	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
+//	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
+//	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
+//	if(!gvrb_Provision){
+//		bufferUartUpdate.push_back(vrts_UartUpdate);
+//	}
+//	pthread_mutex_unlock(&vrpth_SendUart);
+//}
 
 void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		uint16_t adrGroup, uint8_t parStatusOnOff, uint16_t parLightness,
@@ -377,6 +415,9 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	else if(Func == CallSence_typedef){
 		CmdCallSence(unicastAdr,parSenceId,0,transition_par_t);
 	}
+	else if (Func == CallScene_NoAck_typedef) {
+		CmdCallSceneNoAck(unicastAdr, parSenceId, 0, transition_par_t);
+	}
 	else if(Func == HSL_Set_typedef){
 		CmdHSL_Set(unicastAdr, parH, parS, parL,transition_par_t);
 	}
@@ -407,7 +448,7 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	pthread_mutex_trylock(&vrpth_SendUart);
+	while (pthread_mutex_trylock(&vrpth_SendUart) != 0){};
 	bufferDataUart.push_back(vrts_DataUartSend);
 	pthread_mutex_unlock(&vrpth_SendUart);
 
@@ -1103,9 +1144,8 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	pthread_mutex_trylock(&vrpth_SendUart);
+	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
 	bufferDataUart.push_back(vrts_DataUartSend);
-//	head = AddTail(vrts_CMD_STRUCTURE);
 	pthread_mutex_unlock(&vrpth_SendUart);
 }
 

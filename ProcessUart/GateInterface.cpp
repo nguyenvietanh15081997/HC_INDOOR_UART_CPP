@@ -123,56 +123,57 @@ static void LogDataUart(bool hasRsp, uint8_t length, void *data){
 static uint64_t t1, t2, t3, t4;
 static uint64_t waitCmd, waitUpdate;
 static void GWIF_WriteMessage(void) {
-	pthread_mutex_trylock(&vrpth_SendUart);
-	if (bufferDataUart.size()) {
-		uartSendDev_t data = bufferDataUart.front();
-		t1 = getMillisOfDay();
+	if (pthread_mutex_trylock(&vrpth_SendUart)==0){
+		if (bufferDataUart.size()) {
+			uartSendDev_t data = bufferDataUart.front();
+			t1 = getMillisOfDay();
 
-		if ((t1 - t2) >= waitCmd) {
-			waitCmd = data.timeWait;
-			write(serial_port, ToChar(data.dataUart), data.length);
-			tcdrain(serial_port);
-			bufferDataUart.pop_front();
-			bufferDataUart.shrink_to_fit();
-			t2 = t1;
-			t4 = t1;
-			LogDataUart(0, data.length, (void*) &data.dataUart.HCI_CMD_GATEWAY[0]);
+			if ((t1 - t2) >= waitCmd) {
+				waitCmd = data.timeWait;
+				write(serial_port, ToChar(data.dataUart), data.length);
+				tcdrain(serial_port);
+				bufferDataUart.pop_front();
+				bufferDataUart.shrink_to_fit();
+				t2 = t1;
+				t4 = t1;
+				LogDataUart(0, data.length, (void*) &data.dataUart.HCI_CMD_GATEWAY[0]);
 
-			uint16_t opcodeCmd = data.dataUart.opCode[0] | (data.dataUart.opCode[1] << 8);
-			switch (opcodeCmd){
-			case SCENE_STORE:
-				gvrb_AddSceneLight = true;
-				break;
-			case SCENE_DEL:
-				gvrb_AddSceneLight = false;
-				gSceneIdDel = data.dataUart.para[0] | (data.dataUart.para[1] << 8);
-				break;
-			case CFG_MODEL_SUB_ADD:
-				gvrb_AddGroupLight = true;
-				break;
-			case CFG_MODEL_SUB_DEL:
-				gvrb_AddGroupLight = false;
-				break;
+				uint16_t opcodeCmd = data.dataUart.opCode[0] | (data.dataUart.opCode[1] << 8);
+				switch (opcodeCmd){
+				case SCENE_STORE:
+					gvrb_AddSceneLight = true;
+					break;
+				case SCENE_DEL:
+					gvrb_AddSceneLight = false;
+					gSceneIdDel = data.dataUart.para[0] | (data.dataUart.para[1] << 8);
+					break;
+				case CFG_MODEL_SUB_ADD:
+					gvrb_AddGroupLight = true;
+					break;
+				case CFG_MODEL_SUB_DEL:
+					gvrb_AddGroupLight = false;
+					break;
+				}
+				vrte_TypeCmd = typeCmd_Control;
 			}
-			vrte_TypeCmd = typeCmd_Control;
 		}
-	}
-	else if (bufferUartUpdate.size() && !gvrb_Provision){
-		uartSendDev_t dataUpdate = bufferUartUpdate.front();
-		t3 = getMillisOfDay();
-		if((t3 - t4) >= waitUpdate) {
-			waitUpdate = dataUpdate.timeWait;
-			write(serial_port, ToChar(dataUpdate.dataUart), dataUpdate.length);
-			tcdrain(serial_port);
-			bufferUartUpdate.pop_front();
-			bufferUartUpdate.shrink_to_fit();
-			t4 = t3;
-			t2 = t3;
-//			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
-			vrte_TypeCmd = typeCmd_Update;
+		else if (bufferUartUpdate.size() && !gvrb_Provision){
+			uartSendDev_t dataUpdate = bufferUartUpdate.front();
+			t3 = getMillisOfDay();
+			if((t3 - t4) >= waitUpdate) {
+				waitUpdate = dataUpdate.timeWait;
+				write(serial_port, ToChar(dataUpdate.dataUart), dataUpdate.length);
+				tcdrain(serial_port);
+				bufferUartUpdate.pop_front();
+				bufferUartUpdate.shrink_to_fit();
+				t4 = t3;
+				t2 = t3;
+	//			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
+				vrte_TypeCmd = typeCmd_Update;
+			}
 		}
+		pthread_mutex_unlock(&vrpth_SendUart);
 	}
-	pthread_mutex_unlock(&vrpth_SendUart);
 }
 
 static uint8_t read_buf[256];
@@ -223,7 +224,7 @@ static void GWIF_CheckData()
 						|| (vrts_GWIF_IncomeMessage->Opcode == HCI_GATEWAY_CMD_SAR_MSG)
 						|| (vrts_GWIF_IncomeMessage->Opcode == TSCRIPT_CMD_VC_DEBUG))
 				{
-					if (vrts_ringbuffer_Data.count >= (vrui_GWIF_LengthMeassge -1)) {
+					if (vrts_ringbuffer_Data.count >= (size_t)(vrui_GWIF_LengthMeassge -1)) {
 						for (vrui_Count = 0; vrui_Count < vrui_GWIF_LengthMeassge - 1; vrui_Count++) {
 							ring_pop_tail(&vrts_ringbuffer_Data, (void*) &vrsc_GWIF_TempBuffer[MESSAGE_HEADLENGTH + vrui_Count]);
 						}
@@ -373,7 +374,11 @@ static int GWIF_ProcessData (void)
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
 		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
-			LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
+//			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
+//					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
+//					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
+				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
+//			}
 		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \
@@ -405,10 +410,11 @@ static int GWIF_ProcessData (void)
 					&& (vrts_GWIF_IncomeMessage->Message[23] != 0x33)
 					&& (vrts_GWIF_IncomeMessage->Message[24] != 0x44)) {
 				stateProvision = statePro_setPro;
-//			}
-//			else if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_SETPRO_SUSCESS) && \
-//					(stateProvision == statePro_waitSetPro)){
-//				stateProvision = statePro_getPro;
+/*			}
+			else if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_SETPRO_SUSCESS) && \
+					(stateProvision == statePro_waitSetPro)){
+				stateProvision = statePro_getPro;
+*/
 			} else if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_PRO_STS_RSP) &&\
 						(vrts_GWIF_IncomeMessage->Message[21] == 0x11) &&\
 						(vrts_GWIF_IncomeMessage->Message[22] == 0x22) &&\

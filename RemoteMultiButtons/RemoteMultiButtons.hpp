@@ -11,6 +11,7 @@
 #include "../Include/Include.hpp"
 #include "../Mqtt/Mqtt.hpp"
 #include "../ProcessUart/OpCode.h"
+#include "../logging/slog.h"
 
 #define REMOTE_MUL_CONFIG_GROUP					0x0B0A
 #define REMOTE_MUL_SCENE_SET					0x0102

@@ -88,6 +88,7 @@ void RspOnoff(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -117,6 +118,7 @@ void RspCCT(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -146,6 +148,7 @@ void RspDIM(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -180,6 +183,7 @@ void RspDim_CCT(TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -232,6 +236,7 @@ void RspHSL(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -260,12 +265,13 @@ void RspAddDelGroup(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
 static int FindSceneDel(uint16_t adr){
 	for(int i = 0; i < MAX_DEV; i++){
-		if(adr == g_listAdrScene[i][0] && g_listAdrScene[i][0] != 0){
+		if(adr == g_listAdrScene[i][0] && g_listAdrScene[i][1] != 0){
 			return i;
 		}
 	}
@@ -279,10 +285,18 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 		cmd = "ADDSCENE";
 	} else {
 		cmd = "DELSCENE";
+		while(pthread_mutex_trylock(&vrpth_DelScene) != 0){};
 		int indexScene = FindSceneDel(adr);
 		sceneAddId = g_listAdrScene[indexScene][1];
 		g_listAdrScene[indexScene][0] = 0;
 		g_listAdrScene[indexScene][1] = 0;
+//		slog_info("Xoa mang");
+//		for(int m = 0;m < MAX_DEV; m++){
+//			if (g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0) {
+//				slog_print(SLOG_INFO, 1, "<%d>:%d- %d", m, g_listAdrScene[m][0], g_listAdrScene[m][1]);
+//			}
+//		}
+		pthread_mutex_unlock(&vrpth_DelScene);
 	}
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
@@ -300,6 +314,7 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 
 }
@@ -329,6 +344,7 @@ void RspCallScene(TS_GWIF_IncomingData *data) {
 		char * sendT = new char[s.length()+1];
 		strcpy(sendT, s.c_str());
 		mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+		slog_info("<mqtt>send: %s", sendT);
 		delete sendT;
 	}
 }
@@ -409,6 +425,7 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 			char * sendT = new char[s.length()+1];
 			strcpy(sendT, s.c_str());
 			mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+//			slog_info("<mqtt>send: %s", sendT);
 			delete sendT;
 		}
 	}
@@ -471,6 +488,7 @@ void RspTypeDevice(TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
@@ -492,6 +510,7 @@ void RspResetNode (TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 

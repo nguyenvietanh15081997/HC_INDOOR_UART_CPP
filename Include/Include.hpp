@@ -49,8 +49,9 @@ extern int ptempIndoor;
 extern uint16_t phumIndoor;
 extern uint16_t ppm25;
 extern pthread_mutex_t vrpth_SendUart;
+extern pthread_mutex_t vrpth_DelScene;
 
-#define MAX_DEV    500
+#define MAX_DEV    4800
 extern uint16_t g_listAdrScene[MAX_DEV][2];
 
 typedef enum {

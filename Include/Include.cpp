@@ -16,6 +16,7 @@ bool 					gvrb_AddGroupLight;
 bool					gvrb_Provision;
 uint16_t 				gSceneIdDel;
 pthread_mutex_t vrpth_SendUart = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t vrpth_DelScene = PTHREAD_MUTEX_INITIALIZER;
 
 bool startProcessRoom = false;
 
