@@ -152,7 +152,9 @@ static void Update(char *msg) {
 					adr = device["DEVICE_UNICAST_ID"].GetInt();
 					if(device.HasMember("TYPE_DV") && device["TYPE_DV"].IsInt()){
 						typeDev = device["TYPE_DV"].GetInt();
-						if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
+						if (typeDev == CONG_TAC_REM){
+							CURTAIN_Cmd(enum_curtain_status_request, adr, NULL8, NULL8, NULL16);
+						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04) {
@@ -160,7 +162,42 @@ static void Update(char *msg) {
 									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
 									NULL16);
 						} else {
-							CmdUpdateLight(HCI_CMD_GATEWAY_CMD,adr);
+							if (device.HasMember("VERSION") && device["VERSION"].IsString()){
+								string str_version = device["VERSION"].GetString();
+								float f_version = stof(str_version);
+								if(f_version >= 1.1) {
+									CmdUpdateLight(HCI_CMD_GATEWAY_CMD,adr);
+								} else {
+									if (typeDev == LED_DOWNLIGHT_COB_HEP
+											|| typeDev == LED_DOWNLIGHT_COB_RONG
+											|| typeDev == LED_DOWNLIGHT_COB_TRANG_TRI
+											|| typeDev == LED_DOWNLIGHT_SMT
+											|| typeDev == LED_PANEL_TRON
+											|| typeDev == LED_PANEL_VUONG
+											|| typeDev == LED_OP_TRAN
+											|| typeDev == LED_OP_TUONG
+											|| typeDev == LED_CHIEU_GUONG
+											|| typeDev == LED_CHIEU_TRANH_GAN_TUONG
+											|| typeDev == LED_TRACKLIGHT
+											|| typeDev == LED_THA_TRAN
+											|| typeDev == LED_DAY_CCT
+											|| typeDev == LED_Tube_M16
+											|| typeDev == DEN_BAN
+											|| typeDev == LED_FLOODING) {
+										CmdUpdateLight_Old(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+										CmdUpdateLight_Old(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
+									} else if (typeDev == LED_DAY_RGBCW
+											|| typeDev == LED_BULD
+											|| typeDev == LED_OP_TRAN_LOA
+											|| typeDev == LED_DOWNLIGHT_RGB) {
+										CmdUpdateLight_Old(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+										CmdUpdateLight_Old(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
+										CmdUpdateLight_Old(update_HSL, HCI_CMD_GATEWAY_CMD, adr, 12);
+									} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF) {
+										CmdUpdateLight_Old(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
+									}
+								}
+							}
 						}
 					}
 				}
@@ -168,62 +205,6 @@ static void Update(char *msg) {
 		}
 	}
 }
-
-//static void Update(char *msg) {
-//	Document document;
-//	document.Parse(msg);
-//	uint16_t adr = 0;
-//	uint16_t typeDev = 0;
-//	if (document.IsObject()) {
-//		if (document.HasMember("DATA") && document["DATA"].IsArray()) {
-//			const Value &data = document["DATA"];
-//			for(rapidjson::size_t i=0; i<data.Size(); i++){
-//				const Value &device = data[i];
-//				if(device.HasMember("DEVICE_UNICAST_ID") && device["DEVICE_UNICAST_ID"].IsInt()){
-//					adr = device["DEVICE_UNICAST_ID"].GetInt();
-//					if(device.HasMember("TYPE_DV") && device["TYPE_DV"].IsInt()){
-//						typeDev = device["TYPE_DV"].GetInt();
-//						if (typeDev == LED_DOWNLIGHT_COB_HEP
-//								|| typeDev == LED_DOWNLIGHT_COB_RONG
-//								|| typeDev == LED_DOWNLIGHT_COB_TRANG_TRI
-//								|| typeDev == LED_DOWNLIGHT_SMT
-//								|| typeDev == LED_PANEL_TRON
-//								|| typeDev == LED_PANEL_VUONG
-//								|| typeDev == LED_OP_TRAN
-//								|| typeDev == LED_OP_TUONG
-//								|| typeDev == LED_CHIEU_GUONG
-//								|| typeDev == LED_CHIEU_TRANH_GAN_TUONG
-//								|| typeDev == LED_TRACKLIGHT
-//								|| typeDev == LED_THA_TRAN
-//								|| typeDev == LED_DAY_CCT
-//								|| typeDev == LED_Tube_M16
-//								|| typeDev == DEN_BAN
-//								|| typeDev == LED_FLOODING) {
-//							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-//							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
-//						} else if (typeDev == LED_DAY_RGBCW
-//								|| typeDev == LED_BULD
-//								|| typeDev == LED_OP_TRAN_LOA) {
-//							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-//							CmdUpdateLight(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
-//							CmdUpdateLight(update_HSL, HCI_CMD_GATEWAY_CMD, adr, 12);
-//						} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF){
-//							CmdUpdateLight(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-//						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
-//								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
-//								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
-//								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04) {
-//							Switch_Send_Uart(switch_enum_status, typeDev, adr,
-//									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
-//									NULL16);
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//}
-
 
 static void ResetNode(char *msg) {
 	Document document;
@@ -608,12 +589,12 @@ static void DelScene(char *msg) {
 							break;
 						}
 					}
-//					slog_info("Ghi mang");
-//					for(int m = 0;m < MAX_DEV; m++){
-//						if(g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0){
-//							slog_print(SLOG_INFO, 1,"<%d>:%d- %d- %d",m,adrCct, g_listAdrScene[m][0], g_listAdrScene[m][1]);
-//						}
-//					}
+					slog_info("Ghi mang");
+					for(int m = 0;m < MAX_DEV; m++){
+						if(g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0){
+							slog_print(SLOG_INFO, 1,"<%d>:%d- %d- %d",m,adrCct, g_listAdrScene[m][0], g_listAdrScene[m][1]);
+						}
+					}
 					pthread_mutex_unlock(&vrpth_DelScene);
 				}
 			}
@@ -1476,10 +1457,27 @@ static void CalibCurtain (char * msg){
 			const Value &data = document["DATA"];
 			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
-				if (data.HasMember("TYPE_CONTROL") && data["TYPE_CONTROL"].IsInt()){
-					type = data["TYPE_CONTROL"].GetInt();
+				if (data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
+					const Value& properties = data["PROPERTIES"];
+					for(SizeType i = 0; i < properties.Size(); i++) {
+						const Value& property = properties[i];
+						if (property.HasMember("ID") && property["ID"].IsInt()
+								&& property.HasMember("VALUE")
+								&& property["VALUE"].IsInt()) {
+							int id = property["ID"].GetInt();
+							int value = property["VALUE"].GetInt();
+							if (id == REM_PHANTRAM_MO) {
+								if (value == 0) {
+									CURTAIN_Cmd(enum_curtain_calib, adr, 0, NULL8, NULL16);
+								} else if (value == 100) {
+									CURTAIN_Cmd(enum_curtain_calib, adr, 1, NULL8, NULL16);
+								}
+							} else if (id == REM_DUNG) {
+								CURTAIN_Cmd(enum_curtain_calib, adr, 2, NULL8, NULL16);
+							}
+						}
+					}
 				}
-				CURTAIN_Cmd(enum_curtain_calib, adr, type, NULL8, NULL16);
 			}
 		}
 	}
@@ -1594,7 +1592,7 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"CURTAIN_SCENE_SET",			(AddSceneCurtain)},
 		{"CURTAIN_SCENE_DEL",			(DelSceneCurtain)},
 		{"CURTAIN_STATUS_REQUEST",		(RequestStatusCurtain)},
-		{"CURTAIN_CALIB", 				(CalibCurtain)},
+		{"DEVICE_CALIB", 				(CalibCurtain)},
 		{"UPDATE_SENSOR_STATUS",		(RequestStatusSensor)},
 		{"SEND_UART", 					(Send_Uart)},
 		{"SCAN",						(Scan)},

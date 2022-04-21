@@ -225,7 +225,7 @@ typedef enum{
  * Update light
  */
 void CmdUpdateLight(uint16_t cmd, uint16_t adr);
-//void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength);
+void CmdUpdateLight_Old(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength);
 
 /*
  * Main function: build frame data control node, and transmit uart

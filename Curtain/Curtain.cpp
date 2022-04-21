@@ -182,7 +182,7 @@ void CURTAIN_RSP_Scene_Set(TS_GWIF_IncomingData *data) {
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("CURTAIN_SCENE_SET");
+		json.Key("CMD");json.String("ADDSCENE");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
@@ -206,7 +206,7 @@ void CURTAIN_RSP_Scene_Del(TS_GWIF_IncomingData *data) {
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("CURTAIN_SCENE_DEL");
+		json.Key("CMD");json.String("DELSCENE");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
@@ -230,11 +230,17 @@ void CURTAIN_RSP_Status_Request(TS_GWIF_IncomingData *data) {
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("CURTAIN_STATUS_REQUEST");
+		json.Key("CMD");json.String("UPDATE");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-			json.Key("PERCENT"); json.Int(percent);
+			json.Key("PROPERTIES");
+			json.StartArray();
+				json.StartObject();
+					json.Key("ID"); json.Int(57);
+					json.Key("VALUE"); json.Int(percent);
+				json.EndObject();
+			json.EndArray();
 		json.EndObject();
 	json.EndObject();
 
@@ -254,11 +260,25 @@ void CURTAIN_RSP_Calib(TS_GWIF_IncomingData *data) {
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD"); json.String("CURTAIN_CALIB");
+		json.Key("CMD"); json.String("DEVICE_CALIB");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
-			json.Key("TYPE_CONTROL"); json.Int(status);
+			json.Key("PROPERTIES");
+			json.StartArray();
+				json.StartObject();
+					if (status == 0){
+						json.Key("ID");json.Int(57);
+						json.Key("VALUE"); json.Int(0);
+					} else if (status == 1){
+						json.Key("ID");json.Int(57);
+						json.Key("VALUE"); json.Int(100);
+					} else if (status == 2) {
+						json.Key("ID");json.Int(56);
+						json.Key("VALUE"); json.Int(0);
+					}
+				json.EndObject();
+			json.EndArray();
 		json.EndObject();
 	json.EndObject();
 
@@ -307,7 +327,6 @@ void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data){
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
-			json.Key("TYPE"); json.Int(status);
 			json.Key("PERCENT"); json.Int(percent);
 		json.EndObject();
 	json.EndObject();

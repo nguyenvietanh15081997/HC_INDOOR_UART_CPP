@@ -312,32 +312,32 @@ void CmdUpdateLight(uint16_t cmd, uint16_t adr) {
 		pthread_mutex_unlock(&vrpth_SendUart);
 	}
 }
-//void CmdUpdateLight(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
-//	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
-//	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd>>8) & 0xFF;
-//	vrts_CMD_STRUCTURE.opCode00[0] = 0;
-//	vrts_CMD_STRUCTURE.opCode00[1] = 0;
-//	vrts_CMD_STRUCTURE.opCode00[2] = 0;
-//	vrts_CMD_STRUCTURE.opCode00[3] = 0;
-//	vrts_CMD_STRUCTURE.retry_cnt = 0;
-//	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
-//	if (type  == update_OnOff){
-//		CmdOnOff_Get(adr);
-//	} else if (type == update_DIM_CCT){
-//		CmdLightness_CCT_Get(adr);
-//	} else if (type == update_HSL){
-//		CmdHSL_Get(adr);
-//	}
-//	uartSendDev_t vrts_UartUpdate;
-//	vrts_UartUpdate.length = cmdLength;
-//	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
-//	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
-//	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
-//	if(!gvrb_Provision){
-//		bufferUartUpdate.push_back(vrts_UartUpdate);
-//	}
-//	pthread_mutex_unlock(&vrpth_SendUart);
-//}
+void CmdUpdateLight_Old(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
+	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
+	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1] = (cmd>>8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode00[0] = 0;
+	vrts_CMD_STRUCTURE.opCode00[1] = 0;
+	vrts_CMD_STRUCTURE.opCode00[2] = 0;
+	vrts_CMD_STRUCTURE.opCode00[3] = 0;
+	vrts_CMD_STRUCTURE.retry_cnt = 0;
+	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
+	if (type  == update_OnOff){
+		CmdOnOff_Get(adr);
+	} else if (type == update_DIM_CCT){
+		CmdLightness_CCT_Get(adr);
+	} else if (type == update_HSL){
+		CmdHSL_Get(adr);
+	}
+	uartSendDev_t vrts_UartUpdate;
+	vrts_UartUpdate.length = cmdLength;
+	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
+	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
+	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
+	if(!gvrb_Provision){
+		bufferUartUpdate.push_back(vrts_UartUpdate);
+	}
+	pthread_mutex_unlock(&vrpth_SendUart);
+}
 
 void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 		uint16_t adrGroup, uint8_t parStatusOnOff, uint16_t parLightness,

@@ -168,7 +168,7 @@ static void GWIF_WriteMessage(void) {
 				bufferUartUpdate.shrink_to_fit();
 				t4 = t3;
 				t2 = t3;
-	//			LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
+//				LogDataUart(0, dataUpdate.length, (void*) &dataUpdate.dataUart.HCI_CMD_GATEWAY[0]);
 				vrte_TypeCmd = typeCmd_Update;
 			}
 		}
@@ -186,6 +186,7 @@ static void GWIF_Read2Buffer (void){
 		num_count2Push = 0;
 		while((vrts_ringbuffer_Data.count < RINGBUFFER_LEN) && (num_bytes > 0)){
 			ring_push_head((ringbuffer_t *)&vrts_ringbuffer_Data,(void *)(&read_buf[num_count2Push]));
+//			printf("%0.2x-",read_buf[num_count2Push]);
 			num_bytes--;
 			num_count2Push++;
 		}
@@ -193,6 +194,7 @@ static void GWIF_Read2Buffer (void){
 	else{
 		while((vrts_ringbuffer_Data.count < RINGBUFFER_LEN) && (num_bytes > 0)){
 			ring_push_head((ringbuffer_t *)&vrts_ringbuffer_Data,(void *)(&read_buf[num_count2Push]));
+//			printf("%0.2x-",read_buf[num_count2Push]);
 			num_bytes--;
 			num_count2Push++;
 		}

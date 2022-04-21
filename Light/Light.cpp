@@ -290,12 +290,12 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 		sceneAddId = g_listAdrScene[indexScene][1];
 		g_listAdrScene[indexScene][0] = 0;
 		g_listAdrScene[indexScene][1] = 0;
-//		slog_info("Xoa mang");
-//		for(int m = 0;m < MAX_DEV; m++){
-//			if (g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0) {
-//				slog_print(SLOG_INFO, 1, "<%d>:%d- %d", m, g_listAdrScene[m][0], g_listAdrScene[m][1]);
-//			}
-//		}
+		slog_info("Xoa mang");
+		for(int m = 0;m < MAX_DEV; m++){
+			if (g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0) {
+				slog_print(SLOG_INFO, 1, "<%d>:%d- %d", m, g_listAdrScene[m][0], g_listAdrScene[m][1]);
+			}
+		}
 		pthread_mutex_unlock(&vrpth_DelScene);
 	}
 	StringBuffer dataMqtt;
@@ -450,6 +450,7 @@ void RspSaveGw(TS_GWIF_IncomingData *data){
 	char * sendT = new char[s.length()+1];
 	strcpy(sendT, s.c_str());
 	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
+	slog_info("<mqtt>send: %s", sendT);
 	delete sendT;
 }
 
