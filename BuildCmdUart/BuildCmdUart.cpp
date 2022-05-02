@@ -4,7 +4,7 @@
 #include "../Sensor/Sensor.hpp"
 #include "string.h"
 
-#define TIMEWAIT_UPDATE		5000
+#define TIMEWAIT_UPDATE		3000
 #define TIMEWAIT			500
 #define TIMECONFIGROOM  	900
 #define TIMEWAIT_REMOTE		600

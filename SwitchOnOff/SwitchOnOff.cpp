@@ -132,7 +132,7 @@ static void InitFramUart(){
 	vrts_CMD_STRUCTURE.rsp_max     			= switch_parRsp_Max;
 }
 
-#define SWITCH_TIME_WAIT		500
+#define SWITCH_TIME_WAIT		900
 void Switch_Send_Uart(switch_enum_cmd typeCmd, uint16_t typeSw, uint16_t adr,
 		uint8_t relayId, uint8_t relayValue, uint8_t relay1, uint8_t relay2,
 		uint8_t relay3, uint8_t relay4, uint16_t sceneId) {
