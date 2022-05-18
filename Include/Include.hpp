@@ -50,6 +50,7 @@ extern uint16_t phumIndoor;
 extern uint16_t ppm25;
 extern pthread_mutex_t vrpth_SendUart;
 extern pthread_mutex_t vrpth_DelScene;
+extern pthread_mutex_t vrpth_SendMqtt;
 
 #define MAX_DEV    4800
 extern uint16_t g_listAdrScene[MAX_DEV][2];
@@ -110,7 +111,9 @@ typedef struct bufferDataMqtt{
 
 extern deque<uartSendDev_t> bufferDataUart;
 extern deque<uartSendDev_t> bufferUartUpdate;
-
+extern deque<string> 		bufferSendMqtt;
 uartSendDev_t AssignData(uint8_t *data,int length);
+
+void Data2BufferSendMqtt(string s);
 
 #endif /* INCLUDE_INCLUDE_HPP_ */

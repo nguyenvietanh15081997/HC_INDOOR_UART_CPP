@@ -7,6 +7,7 @@
 #include "../logging/slog.h"
 #include "../Include/Include.hpp"
 #include "../ProcessUart/RingBuffer.h"
+#include <time.h>
 #include <fstream>
 
 #define MAXDATAMQTT			2048
@@ -21,7 +22,7 @@ using namespace rapidjson;
 
 //queue<bufferDataMqtt_t> bufferMqtt;
 
-int mqtt_send(struct mosquitto *mosq, char *topic, char *msg) {
+static int mqtt_send(struct mosquitto *mosq, char *topic, char *msg) {
 	mosquitto_publish(mosq, NULL, topic, strlen(msg), msg, qos, 0);
 //	slog_info("<mqtt>send: %s", msg);
 	return 0;
@@ -74,6 +75,38 @@ static bool CheckFile (const std::string& name) {
         return false;
     }
 }
+time_t t1,t2;
+static void LogSizeMem(){
+	t1 = time(NULL);
+	if ((t1 - t2) > 60){
+	FILE *fp;
+	char path[128];
+	fp = popen("ps | grep './HC_UART_INDOOR' | grep -v \"grep\"", "r");
+	if (fp == NULL) {
+		printf("Failed to run command");
+	exit(1);
+	}
+	while (fgets(path, sizeof(path), fp) != NULL) {
+		break;
+	}
+	pclose(fp);
+	slog_print(SLOG_WARN, 1, "<system>%s",path);
+	t2 = t1;
+	}
+}
+
+void mqtt_check_buffer() {
+	while(pthread_mutex_trylock(&vrpth_SendMqtt) != 0){};
+	if(bufferSendMqtt.size() > 0){
+		string s = bufferSendMqtt.front();
+		mqtt_send(mosq, TP_PUB, (char*)s.c_str());
+		bufferSendMqtt.pop_front();
+		bufferSendMqtt.shrink_to_fit();
+	}
+	pthread_mutex_unlock(&vrpth_SendMqtt);
+	LogSizeMem();
+}
+
 
 void* MQTT_Thread(void *argv) {
 	bool CheckMqtt = false;
@@ -111,6 +144,7 @@ void* MQTT_Thread(void *argv) {
 		mosquitto_subscribe(mosq, NULL, TP_SUB, qos);
 		while (run) {
 			rc = abc = mosquitto_loop(mosq, -1, 1);
+			mqtt_check_buffer();
 			if (run && rc) {
 				slog_warn("Connection mqtt error");
 				sleep(4);

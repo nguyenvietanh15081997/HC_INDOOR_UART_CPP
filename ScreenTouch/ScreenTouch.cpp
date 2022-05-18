@@ -256,11 +256,8 @@ void RspScreenTouchStatus(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 
 }
 void RspScreenTouchAddScene(TS_GWIF_IncomingData *data){
@@ -283,11 +280,8 @@ void RspScreenTouchAddScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchEditScene(TS_GWIF_IncomingData *data){
@@ -310,11 +304,8 @@ void RspScreenTouchEditScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchDelScene(TS_GWIF_IncomingData *data){
@@ -335,11 +326,8 @@ void RspScreenTouchDelScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchSetWeatherOut(TS_GWIF_IncomingData *data) {
@@ -366,11 +354,8 @@ void RspScreenTouchSetWeatherOut(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchWeatherIndoor(TS_GWIF_IncomingData *data) {
@@ -400,11 +385,8 @@ void RspScreenTouchWeatherIndoor(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchTime(TS_GWIF_IncomingData *data) {
@@ -429,11 +411,8 @@ void RspScreenTouchTime(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchDate(TS_GWIF_IncomingData *data) {
@@ -460,11 +439,8 @@ void RspScreenTouchDate(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchDelAllScene(TS_GWIF_IncomingData * data){
@@ -481,11 +457,8 @@ void RspScreenTouchDelAllScene(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchDefaultOnOff(TS_GWIF_IncomingData * data){
@@ -504,11 +477,8 @@ void RspScreenTouchDefaultOnOff(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspScreenTouchStatusOnOffGroup(TS_GWIF_IncomingData *data){
@@ -535,11 +505,8 @@ void RspScreenTouchStatusOnOffGroup(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 #define ST_ADJUST_CCT	1
@@ -589,11 +556,8 @@ void RspScreenTouchAdjust(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RequestTime(TS_GWIF_IncomingData *data) {
@@ -610,11 +574,8 @@ void RequestTime(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RequestTempHum(TS_GWIF_IncomingData *data) {
@@ -631,11 +592,8 @@ void RequestTempHum(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char *sendT = new char[s.length() + 1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 //	int temp = ptempIndoor/10;
 //	int hum = phumIndoor/10;
 //	if((ptempIndoor % 10) >=5 ){

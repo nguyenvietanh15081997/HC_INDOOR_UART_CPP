@@ -264,7 +264,7 @@ typedef struct processRsp0x52{
 	cb_rsp_function_t 	rspFuncProcess0x52;
 } proccessRsp0x52_t;
 
-#define MAX_FUNCTION0x52_RSP			25
+#define MAX_FUNCTION0x52_RSP			26
 proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{REMOTE_MODULE_AC_TYPE,					RspRemoteStatus},
 		{REMOTE_MODULE_DC_TYPE,					RspRemoteStatus},
@@ -284,7 +284,8 @@ proccessRsp0x52_t listRspFunction0x52[MAX_FUNCTION0x52_RSP] = {
 		{SWITCH_2_CONTROL,						Rsp_Switch_Status},
 		{SWITCH_3_CONTROL,						Rsp_Switch_Status},
 		{SWITCH_4_CONTROL,						Rsp_Switch_Status},
-		{CURTAIN_STATUS_RSP,					CURTAIN_RSP_PressBT},
+		{CURTAIN_STATUS_RSP,					CURTAIN_RSP_PressBT_End},
+		{CURTAIN_PRESS,							CURTAIN_RSP_PressBT},
 		{REMOTE_MUL_RSP_SCENE_ACTIVE_DEFAULT, 	RemoteMul_Rsp_CallSceneDefault},
 		{REMOTE_MUL_RSP_SCENE_ACTIVE, 			RemoteMul_Rsp_CallScene},
 		{REMOTE_MUL_RSP_ONOFF_GROUP,        	RemoteMul_Rsp_OnOffGroup},
@@ -450,6 +451,17 @@ static int GWIF_ProcessData (void)
 						vrts_GWIF_IncomeMessage->Message[14],vrts_GWIF_IncomeMessage->Message[15],
 						vrts_GWIF_IncomeMessage->Message[16],vrts_GWIF_IncomeMessage->Message[17]);
 				stateProvision = statePro_provision;
+			} else if(vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_SEND_NODE_INFO){
+				sprintf((char*) PRO_deviceKey,
+						"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+						vrts_GWIF_IncomeMessage->Message[5],vrts_GWIF_IncomeMessage->Message[6],
+						vrts_GWIF_IncomeMessage->Message[7],vrts_GWIF_IncomeMessage->Message[8],
+						vrts_GWIF_IncomeMessage->Message[9],vrts_GWIF_IncomeMessage->Message[10],
+						vrts_GWIF_IncomeMessage->Message[11],vrts_GWIF_IncomeMessage->Message[12],
+						vrts_GWIF_IncomeMessage->Message[13],vrts_GWIF_IncomeMessage->Message[14],
+						vrts_GWIF_IncomeMessage->Message[15],vrts_GWIF_IncomeMessage->Message[16],
+						vrts_GWIF_IncomeMessage->Message[17],vrts_GWIF_IncomeMessage->Message[18],
+						vrts_GWIF_IncomeMessage->Message[19],vrts_GWIF_IncomeMessage->Message[20]);
 			} else if (vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_PROVISION_EVT
 					&& vrts_GWIF_IncomeMessage->Message[1] == HCI_GATEWAY_CMD_PROVISION_SUSCESS) {
 				stateProvision = statePro_bindingAll;

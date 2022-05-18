@@ -13,6 +13,9 @@
 #define TIMEOUT_PRO			40
 #define TIMEOUT_TYPE		1
 
+using namespace std;
+using namespace rapidjson;
+
 uint8_t OUTMESSAGE_ScanStop[3]     = {0xE9, 0xFF, 0x01};
 uint8_t OUTMESSAGE_ScanStart[3]    = {0xE9, 0xFF, 0x00};
 uint8_t OUTMESSAGE_MACSelect[9]    = {0xE9, 0xFF, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -28,6 +31,7 @@ uint8_t admit_pro_internal[]    =   {0xe9, 0xff, 0x0d, 0x01, 0x00, 0xff, 0xfb, 0
 // Neu provision den loi thi reset unicast de gw dam bao so luong thiet bi quan ly
 uint8_t reset_Node[]     		= 	{0xe9, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x49};
 
+uint8_t PRO_deviceKeyGw[37] = {0};
 uint8_t PRO_deviceKey[37] = {0};
 uint8_t PRO_netKey[37] = {0};
 uint8_t PRO_appKey[37] = {0};
@@ -50,7 +54,9 @@ static void Pro_Stop(void) {
 	gvrb_Provision = false;
 	bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop, 3));
 	slog_print(SLOG_INFO, 1, "<provision>stop");
-	mqtt_send(mosq,TP_PUB,"{\"CMD\":\"STOP\"}");
+	string s = "{\"CMD\":\"STOP\"}";
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 	pthread_cancel(vrpth_Pro);
 }
 static void Pro_SelectMac(void) {
@@ -76,13 +82,14 @@ static void Pro_SetPro(void) {
 		setpro_internal[i + 3] = random1;
 		admit_pro_internal[i + 5] = random2;
 	}
+	uint16_t adr_gw = (setpro_internal[26] | setpro_internal[27] << 8);
 	bufferDataUart.push_back(AssignData(setpro_internal, 28));
 	slog_print(SLOG_INFO, 1, "<probision>setpro");
 	usleep(400000);
 	bufferDataUart.push_back(AssignData(admit_pro_internal, 21));
 	slog_print(SLOG_INFO, 1, "<probision>admitpro");
 
-	sprintf((char*) PRO_deviceKey,
+	sprintf((char*) PRO_deviceKeyGw,
 			"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 			admit_pro_internal[5], admit_pro_internal[6],
 			admit_pro_internal[7], admit_pro_internal[8],
@@ -92,6 +99,34 @@ static void Pro_SetPro(void) {
 			admit_pro_internal[15], admit_pro_internal[16],
 			admit_pro_internal[17], admit_pro_internal[18],
 			admit_pro_internal[19], admit_pro_internal[20]);
+	uint8_t uuid_gw[37] = {0};
+	sprintf((char*) uuid_gw,
+		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		admit_pro_internal[5],admit_pro_internal[6],
+		admit_pro_internal[7],admit_pro_internal[8],
+		admit_pro_internal[9],admit_pro_internal[10],
+		admit_pro_internal[11],0,0,0,0,0,0,0,0,0);
+	StringBuffer dataMqtt1;
+	Writer<StringBuffer> json1(dataMqtt1);
+	json1.StartObject();
+		json1.Key("CMD");json1.String("NEW_DEVICE");
+		json1.Key("DATA");
+		json1.StartObject();
+			json1.Key("DEVICE_UNICAST_ID");json1.Int(adr_gw);
+			json1.Key("DEVICE_ID");json1.String((char *)uuid_gw);
+			json1.Key("DEVICE_TYPE_ID");json1.Int(0);
+			json1.Key("MAC_ADDRESS");json1.String("00:00:00:00:00:00");
+			json1.Key("FIRMWARE_VERSION");json1.String("1.0");
+			json1.Key("DEVICE_KEY");json1.String((char *)PRO_deviceKeyGw);
+			json1.Key("NET_KEY");json1.String("");
+			json1.Key("APP_KEY");json1.String("");
+		json1.EndObject();
+	json1.EndObject();
+
+	//	cout << dataMqtt.GetString() << endl;
+	string s1 = dataMqtt1.GetString();
+	slog_info("<mqtt>send: %s", s1.c_str());
+	Data2BufferSendMqtt(s1);
 	stateProvision = statePro_getPro;
 }
 static void Pro_Provision(void) {

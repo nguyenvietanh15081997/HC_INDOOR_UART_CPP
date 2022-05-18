@@ -22,7 +22,7 @@ extern struct mosquitto *mosq;
  * @param msg message mqtt
  * @return null
  */
-int mqtt_send(struct mosquitto *mosq, char *topic, char *msg);
+//int mqtt_send(struct mosquitto *mosq, char *topic, char *msg);
 
 /*
  * Callback connect to mqtt broker

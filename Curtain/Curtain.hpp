@@ -9,7 +9,6 @@
 #define CURTAIN_CURTAIN_HPP_
 
 #include "../Include/Include.hpp"
-#include "../Mqtt/Mqtt.hpp"
 #include "../ProcessUart/OpCode.h"
 #include "../logging/slog.h"
 
@@ -19,6 +18,7 @@
 #define CURTAIN_SCENE_DEL		0x0211
 #define CURTAIN_CALIB			0x0411
 #define CURTAIN_CONFIG_MOTOR 	0x0511
+#define CURTAIN_PRESS			0x0611
 
 #define CURTAIN_OPEN			01
 #define CURTAIN_CLOSE			00
@@ -49,5 +49,7 @@ void CURTAIN_RSP_ConfigMotor(TS_GWIF_IncomingData *data);
 void CURTAIN_RSP_Calib(TS_GWIF_IncomingData *data);
 
 void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data);
+
+void CURTAIN_RSP_PressBT_End( TS_GWIF_IncomingData * data);
 
 #endif /* CURTAIN_CURTAIN_H_ */

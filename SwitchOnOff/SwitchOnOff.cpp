@@ -183,11 +183,8 @@ void Rsp_Switch_Control(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void Rsp_Switch_Scene_Set(TS_GWIF_IncomingData * data){
@@ -220,11 +217,8 @@ void Rsp_Switch_Scene_Set(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void Rsp_Switch_Scene_Del(TS_GWIF_IncomingData * data){
@@ -246,11 +240,8 @@ void Rsp_Switch_Scene_Del(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void Rsp_Switch_Status(TS_GWIF_IncomingData * data){
@@ -274,11 +265,8 @@ void Rsp_Switch_Status(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void Rsp_Switch_RequestStatus(TS_GWIF_IncomingData * data){
@@ -318,9 +306,6 @@ void Rsp_Switch_RequestStatus(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }

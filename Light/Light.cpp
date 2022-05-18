@@ -6,7 +6,6 @@
  */
 
 #include "Light.hpp"
-#include "../Mqtt/Mqtt.hpp"
 #include "../ProcessUart/Provision.hpp"
 #include "../logging/slog.h"
 
@@ -40,10 +39,8 @@ void RspTTL(TS_GWIF_IncomingData *data){
 	json.EndObject();
 
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspOnoff(TS_GWIF_IncomingData *data) {
@@ -85,11 +82,8 @@ void RspOnoff(TS_GWIF_IncomingData *data) {
 		json.EndObject();
 	}
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspCCT(TS_GWIF_IncomingData *data) {
@@ -115,11 +109,8 @@ void RspCCT(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspDIM(TS_GWIF_IncomingData *data) {
@@ -145,11 +136,8 @@ void RspDIM(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspDim_CCT(TS_GWIF_IncomingData *data){
@@ -180,11 +168,8 @@ void RspDim_CCT(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspHSL(TS_GWIF_IncomingData *data) {
@@ -233,11 +218,8 @@ void RspHSL(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspAddDelGroup(TS_GWIF_IncomingData *data) {
@@ -262,11 +244,8 @@ void RspAddDelGroup(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 static int FindSceneDel(uint16_t adr){
@@ -311,12 +290,8 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
-
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspCallScene(TS_GWIF_IncomingData *data) {
@@ -341,11 +316,8 @@ void RspCallScene(TS_GWIF_IncomingData *data) {
 			json.EndObject();
 		json.EndObject();
 		string s = dataMqtt.GetString();
-		char * sendT = new char[s.length()+1];
-		strcpy(sendT, s.c_str());
-		mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-		slog_info("<mqtt>send: %s", sendT);
-		delete sendT;
+		slog_info("<mqtt>send: %s", s.c_str());
+		Data2BufferSendMqtt(s);
 	}
 }
 
@@ -402,10 +374,8 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 			json.EndObject();
 		json.EndObject();
 		string s = dataMqtt.GetString();
-		char * sendT = new char[s.length()+1];
-		strcpy(sendT, s.c_str());
-		mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-		delete sendT;
+		slog_info("<mqtt>send: %s", s.c_str());
+		Data2BufferSendMqtt(s);
 	} else if ((data->Message[7] == ((CALLMODE_RGB >> 8) & 0xFF))
 			&& (data->Message[8] == (CALLMODE_RGB & 0xFF))) {
 		uint8_t modeRgb = data->Message[9];
@@ -422,11 +392,8 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 
 		//	cout << dataMqtt.GetString() << endl;
 			string s = dataMqtt.GetString();
-			char * sendT = new char[s.length()+1];
-			strcpy(sendT, s.c_str());
-			mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-//			slog_info("<mqtt>send: %s", sendT);
-			delete sendT;
+			slog_info("<mqtt>send: %s", s.c_str());
+			Data2BufferSendMqtt(s);
 		}
 	}
 }
@@ -447,11 +414,8 @@ void RspSaveGw(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 static uint16_t TypeConvert(uint8_t type, uint8_t attribute, uint8_t appli) {
@@ -486,11 +450,8 @@ void RspTypeDevice(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspResetNode (TS_GWIF_IncomingData *data){
@@ -508,10 +469,7 @@ void RspResetNode (TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 

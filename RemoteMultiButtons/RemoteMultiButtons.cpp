@@ -125,11 +125,8 @@ void RemoteMul_Rsp_OnOffGroup(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RemoteMul_Rsp_CallScene(TS_GWIF_IncomingData * data) {
@@ -151,11 +148,8 @@ void RemoteMul_Rsp_CallScene(TS_GWIF_IncomingData * data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RemoteMul_Rsp_TIMER(TS_GWIF_IncomingData * data) {
@@ -180,11 +174,8 @@ void RemoteMul_Rsp_TIMER(TS_GWIF_IncomingData * data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RemoteMul_Rsp_CCTDIMRGB(TS_GWIF_IncomingData * data) {
@@ -209,11 +200,8 @@ void RemoteMul_Rsp_CCTDIMRGB(TS_GWIF_IncomingData * data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RemoteMul_Rsp_SwitchStatusLight(TS_GWIF_IncomingData * data){
@@ -234,11 +222,8 @@ void RemoteMul_Rsp_SwitchStatusLight(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RemoteMul_Rsp_CallSceneDefault(TS_GWIF_IncomingData * data){
@@ -270,9 +255,6 @@ void RemoteMul_Rsp_CallSceneDefault(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }

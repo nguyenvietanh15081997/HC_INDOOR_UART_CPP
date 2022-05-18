@@ -20,6 +20,7 @@ extern uint8_t OUTMESSAGE_Provision[28];
 extern uint8_t OUTMESSAGE_BindingALl[22];
 extern uint8_t reset_GW[];
 
+extern uint8_t PRO_deviceKeyGw[37];
 extern uint8_t PRO_deviceKey[37];
 extern uint8_t PRO_netKey[37];
 extern uint8_t PRO_appKey[37];

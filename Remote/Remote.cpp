@@ -6,7 +6,6 @@
  */
 
 #include "Remote.hpp"
-#include "../Mqtt/Mqtt.hpp"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 
 using namespace std;
@@ -49,11 +48,8 @@ void RspRemoteStatus(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspAddSceneRemote(TS_GWIF_IncomingData *data) {
@@ -87,11 +83,8 @@ void RspAddSceneRemote(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspRemoteDelScene(TS_GWIF_IncomingData *data){
@@ -122,11 +115,8 @@ void RspRemoteDelScene(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void RspPowerRemoteStatus(TS_GWIF_IncomingData *data) {
@@ -146,11 +136,8 @@ void RspPowerRemoteStatus(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 

@@ -9,7 +9,7 @@
 #include "../SwitchOnOff/SwitchOnOff.hpp"
 #include "../ProcessUart/Provision.hpp"
 #include "../Curtain/Curtain.hpp"
-#include "../Mqtt/Mqtt.hpp"
+#include "../BackupBle/BackupBle.hpp"
 
 using namespace std;
 using namespace rapidjson;
@@ -132,10 +132,8 @@ static void Stop(char *msg) {
 
 //	cout << sendToDB.GetString() << endl;
 	string s = sendToDB.GetString();
-	char *msgSend = new char[s.length() + 1];
-	strcpy(msgSend, s.c_str());
-	mqtt_send(mosq,(char*) TP_PUB, (char*)msgSend);
-	delete msgSend;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 static void Update(char *msg) {
@@ -589,7 +587,6 @@ static void DelScene(char *msg) {
 							break;
 						}
 					}
-					slog_info("Ghi mang");
 					for(int m = 0;m < MAX_DEV; m++){
 						if(g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0){
 							slog_print(SLOG_INFO, 1,"<%d>:%d- %d- %d",m,adrCct, g_listAdrScene[m][0], g_listAdrScene[m][1]);
@@ -1511,6 +1508,9 @@ static void StopConfigRoom(char *msg){
 static void DelHc(char *msg) {
 
 }
+static void Backup_Ble(char *msg){
+	BACKUP_callback();
+}
 
 static void DeviceControl(char *msg){
 	uint16_t adr = 0;
@@ -1544,7 +1544,7 @@ static void DeviceControl(char *msg){
 
 }
 
-#define MAX_FUNCTION					54
+#define MAX_FUNCTION					55
 functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"DEVICE_CONTROL",              (DeviceControl)},
 		{"ONOFF",						(OnOff)},
@@ -1600,7 +1600,8 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"RESETHC",						(ResetHc)},
 		{"START_PROCESS_ROOM",			(StartConfigRoom)},
 		{"STOP_PROCESS_ROOM",			(StopConfigRoom)},
-		{"DELHC",						(DelHc)}
+		{"DELHC",						(DelHc)},
+		{"BACKUP_BLE",					(Backup_Ble)}
 };
 
 void JsonHandle(char * data) {

@@ -10,6 +10,7 @@
 using namespace std;
 deque<uartSendDev_t> 	bufferDataUart;
 deque<uartSendDev_t>    bufferUartUpdate;
+deque<string> 			bufferSendMqtt;
 cmdcontrol_t 			vrts_CMD_STRUCTURE;
 bool 					gvrb_AddSceneLight;
 bool 					gvrb_AddGroupLight;
@@ -17,6 +18,7 @@ bool					gvrb_Provision;
 uint16_t 				gSceneIdDel;
 pthread_mutex_t vrpth_SendUart = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t vrpth_DelScene = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t vrpth_SendMqtt = PTHREAD_MUTEX_INITIALIZER;
 
 bool startProcessRoom = false;
 
@@ -41,5 +43,11 @@ uartSendDev_t AssignData(uint8_t *data,int length){
 	printf("\n");
 #endif
 	return dataSendUart;
+}
+
+void Data2BufferSendMqtt(string s) {
+	while(pthread_mutex_trylock(&vrpth_SendMqtt) != 0){};
+	bufferSendMqtt.push_back(s);
+	pthread_mutex_unlock(&vrpth_SendMqtt);
 }
 

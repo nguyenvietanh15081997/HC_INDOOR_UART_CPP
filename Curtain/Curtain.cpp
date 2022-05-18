@@ -168,11 +168,8 @@ void CURTAIN_RSP_Control(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void CURTAIN_RSP_Scene_Set(TS_GWIF_IncomingData *data) {
@@ -192,11 +189,8 @@ void CURTAIN_RSP_Scene_Set(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void CURTAIN_RSP_Scene_Del(TS_GWIF_IncomingData *data) {
@@ -216,11 +210,8 @@ void CURTAIN_RSP_Scene_Del(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void CURTAIN_RSP_Status_Request(TS_GWIF_IncomingData *data) {
@@ -246,11 +237,8 @@ void CURTAIN_RSP_Status_Request(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void CURTAIN_RSP_Calib(TS_GWIF_IncomingData *data) {
@@ -284,11 +272,8 @@ void CURTAIN_RSP_Calib(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void CURTAIN_RSP_ConfigMotor(TS_GWIF_IncomingData *data) {
@@ -308,11 +293,8 @@ void CURTAIN_RSP_ConfigMotor(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
 
 void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data){
@@ -333,9 +315,28 @@ void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	char * sendT = new char[s.length()+1];
-	strcpy(sendT, s.c_str());
-	mqtt_send(mosq,(char*)TP_PUB, (char*)sendT);
-	slog_info("<mqtt>send: %s", sendT);
-	delete sendT;
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
+}
+
+void CURTAIN_RSP_PressBT_End( TS_GWIF_IncomingData * data){
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint8_t status  = data->Message[8];
+	uint8_t percent = data->Message[9];
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD"); json.String("CURTAIN_PRESS_END");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
+			json.Key("PERCENT"); json.Int(percent);
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s = dataMqtt.GetString();
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
 }
