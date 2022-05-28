@@ -162,6 +162,9 @@ static void Update(char *msg) {
 						} else {
 							if (device.HasMember("VERSION") && device["VERSION"].IsString()){
 								string str_version = device["VERSION"].GetString();
+								if (str_version.compare(" ") == 0){
+									str_version = "1.0";
+								}
 								float f_version = stof(str_version);
 								if(f_version >= 1.1) {
 									CmdUpdateLight(HCI_CMD_GATEWAY_CMD,adr);
@@ -587,11 +590,11 @@ static void DelScene(char *msg) {
 							break;
 						}
 					}
-					for(int m = 0;m < MAX_DEV; m++){
-						if(g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0){
-							slog_print(SLOG_INFO, 1,"<%d>:%d- %d- %d",m,adrCct, g_listAdrScene[m][0], g_listAdrScene[m][1]);
-						}
-					}
+//					for(int m = 0;m < MAX_DEV; m++){
+//						if(g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0){
+//							slog_print(SLOG_INFO, 1,"<%d>:%d- %d- %d",m,adrCct, g_listAdrScene[m][0], g_listAdrScene[m][1]);
+//						}
+//					}
 					pthread_mutex_unlock(&vrpth_DelScene);
 				}
 			}
@@ -1528,13 +1531,20 @@ static void DeviceControl(char *msg){
 					const Value& property = properties[i];
 					if (property.HasMember("ID") && property["ID"].IsInt()){
 						id = property["ID"].GetInt();
-						if (id == REM_PHANTRAM_MO){
-							if(property.HasMember("VALUE") && property["VALUE"].IsInt()){
-								val = property["VALUE"].GetInt();
-								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN_PERCENT, val, NULL16);
-							}
-						} else if (id == REM_DUNG){
+						if (id == REM_DUNG){
 							CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_PAUSE, NULL8, NULL16);
+						} else if (id == REM_MO) {
+							CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN, NULL8, NULL16);
+						} else if (id == REM_DONG) {
+							CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_CLOSE, NULL8, NULL16);
+						}
+						if (property.HasMember("VALUE") && property["VALUE"].IsInt()) {
+							val = property["VALUE"].GetInt();
+							if (id == REM_PHANTRAM_MO){
+								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN_PERCENT, val, NULL16);
+							} else if (id == REM_CONFIG_MOTOR){
+								CURTAIN_Cmd(enum_curtain_config_motor, adr, val, NULL8, NULL16);
+							}
 						}
 					}
 				}

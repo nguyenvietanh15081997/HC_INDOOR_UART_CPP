@@ -7,7 +7,6 @@
 #include "../logging/slog.h"
 #include "../Include/Include.hpp"
 #include "../ProcessUart/RingBuffer.h"
-#include <time.h>
 #include <fstream>
 
 #define MAXDATAMQTT			2048
@@ -75,13 +74,14 @@ static bool CheckFile (const std::string& name) {
         return false;
     }
 }
-time_t t1,t2;
+
+static time_t t1,t2;
 static void LogSizeMem(){
 	t1 = time(NULL);
 	if ((t1 - t2) > 60){
 	FILE *fp;
 	char path[128];
-	fp = popen("ps | grep './HC_UART_INDOOR' | grep -v \"grep\"", "r");
+	fp = popen("ps | grep 'SYSTEM' | grep -v \"grep\"", "r");
 	if (fp == NULL) {
 		printf("Failed to run command");
 	exit(1);
@@ -150,7 +150,7 @@ void* MQTT_Thread(void *argv) {
 				sleep(4);
 				mosquitto_reconnect_async(mosq);
 			}
-			usleep(1000);
+			usleep(5000);
 		}
 		mosquitto_destroy(mosq);
 	}

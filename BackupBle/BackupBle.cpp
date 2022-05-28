@@ -25,12 +25,13 @@ static uint8_t BACKUP_updateDevKeyGw[23] 	= {0};
 static uint8_t BACKUP_netKey[28] 			= {0};
 static uint8_t BACKUP_devKeygw[21]			= {0};
 static uint8_t BACKUP_appKey[22]			= {0};
+static uint8_t BACKUP_deviceUnicastId[28]   = {0};
 
 typedef enum{
 	inforGw,
 	inforDev,
 	infoAppKey,
-	infoNetKey
+	infoNetKey,
 }type_get_db;
 
 typedef struct infoDev{
@@ -181,6 +182,7 @@ void BACKUP_updateAppKey() {
 //	}
 //	printf("\n");
 	bufferDataUart.push_back(AssignData(BACKUP_appKey, 22));
+	sleep(3);
 }
 
 void BACKUP_gw() {
@@ -223,7 +225,6 @@ void BACKUP_dev() {
 			BACKUP_listDev[i].devKey.erase(BACKUP_listDev[i].devKey.begin() + 12, BACKUP_listDev[i].devKey.begin() + 13);
 			BACKUP_listDev[i].devKey.erase(BACKUP_listDev[i].devKey.begin() + 16, BACKUP_listDev[i].devKey.begin() + 17);
 			BACKUP_listDev[i].devKey.erase(BACKUP_listDev[i].devKey.begin() + 20, BACKUP_listDev[i].devKey.begin() + 21);
-//			cout << ">>>>" << BACKUP_listDev[i].devKey << endl;
 			BACKUP_updateDevKeyDev[0] = 0xe9;
 			BACKUP_updateDevKeyDev[1] = 0xff;
 			BACKUP_updateDevKeyDev[2] = 0x12;
@@ -245,6 +246,25 @@ void BACKUP_dev() {
 	}
 }
 
+#define OFFSET			8
+void BACKUP_DeviceUnicastIdMax(){
+	uint16_t deviceUncastId = 0;
+	for(int i = 0; i < BACKUP_MAXDEV; i++) {
+		if (BACKUP_listDev[i].adr > deviceUncastId) {
+			deviceUncastId = BACKUP_listDev[i].adr;
+		}
+	}
+	BACKUP_deviceUnicastId[0] = 0xe9;
+	BACKUP_deviceUnicastId[1] = 0xff;
+	BACKUP_deviceUnicastId[2] = 0x0a;
+	for(int j = 0; j < 23 ; j++) {
+		BACKUP_deviceUnicastId[3+j] = BACKUP_netKey[3+j];
+	}
+	BACKUP_deviceUnicastId[26] = (deviceUncastId + OFFSET) & 0xFF;
+	BACKUP_deviceUnicastId[27] = ((deviceUncastId + OFFSET) >> 8) & 0xFF;
+	bufferDataUart.push_back(AssignData(BACKUP_deviceUnicastId, 28));
+}
+
 void BACKUP_callback() {
 	bufferDataUart.push_back(AssignData(BACKUP_resetGw, 3));
 	sleep(8);
@@ -255,5 +275,6 @@ void BACKUP_callback() {
 	BACKUP_updateNetKey();
 	BACKUP_updateNewDevKey();
 	BACKUP_updateAppKey();
+	BACKUP_DeviceUnicastIdMax();
 }
 

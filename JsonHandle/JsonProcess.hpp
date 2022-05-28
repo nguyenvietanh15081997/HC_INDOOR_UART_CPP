@@ -40,6 +40,7 @@
 #define REM_DONG						55
 #define REM_DUNG						56
 #define REM_PHANTRAM_MO					57
+#define REM_CONFIG_MOTOR				63
 
 void JsonHandle(char *data);
 

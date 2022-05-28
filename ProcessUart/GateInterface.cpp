@@ -377,11 +377,11 @@ static int GWIF_ProcessData (void)
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
 		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
-//			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
-//					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
-//					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
+			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
+					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
+					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
 				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
-//			}
+			}
 		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \

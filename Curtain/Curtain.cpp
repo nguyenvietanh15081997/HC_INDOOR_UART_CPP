@@ -147,6 +147,7 @@ static uint8_t CURTAIN_listTypeCmd[4] ={55,54,56,57};
 void CURTAIN_RSP_Control(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	uint8_t typeControl = data->Message[10];
+	int type = CURTAIN_listTypeCmd[typeControl];
 	uint8_t percent = data->Message[11];
 
 	StringBuffer dataMqtt;
@@ -159,8 +160,12 @@ void CURTAIN_RSP_Control(TS_GWIF_IncomingData *data) {
 			json.Key("PROPERTIES");
 			json.StartArray();
 				json.StartObject();
-					json.Key("ID"); json.Int(CURTAIN_listTypeCmd[typeControl]);
-					json.Key("VALUE"); json.Int(percent);
+					json.Key("ID"); json.Int(type);
+					if (type == 55 || type == 54){
+						json.Key("VALUE"); json.Int(1);
+					} else {
+						json.Key("VALUE"); json.Int(percent);
+					}
 				json.EndObject();
 			json.EndArray();
 		json.EndObject();
@@ -237,7 +242,7 @@ void CURTAIN_RSP_Status_Request(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	slog_info("<mqtt>send: %s", s.c_str());
+//	slog_info("<mqtt>send: %s", s.c_str());
 	Data2BufferSendMqtt(s);
 }
 
@@ -283,11 +288,17 @@ void CURTAIN_RSP_ConfigMotor(TS_GWIF_IncomingData *data) {
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD"); json.String("CURTAIN_CONFIG_MOTOR");
+		json.Key("CMD"); json.String("DEVICE_CONTROL");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
-			json.Key("TYPE_MOTOR"); json.Int(motor);
+			json.Key("PROPERTIES");
+			json.StartArray();
+			json.StartObject();
+				json.Key("ID"); json.Int(63);
+				json.Key("VALUE"); json.Int(motor);
+			json.EndObject();
+			json.EndArray();
 		json.EndObject();
 	json.EndObject();
 
@@ -309,6 +320,7 @@ void CURTAIN_RSP_PressBT( TS_GWIF_IncomingData * data){
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID"); json.Int(adr);
+			json.Key("BUTTONID"); json.Int(status);
 			json.Key("PERCENT"); json.Int(percent);
 		json.EndObject();
 	json.EndObject();

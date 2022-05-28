@@ -53,10 +53,9 @@ void RspOnoff(TS_GWIF_IncomingData *data) {
 		onoffStatus = data->Message[8];
 	}
 
-	StringBuffer dataMqtt;
-	Writer<StringBuffer> json(dataMqtt);
-
 	if (vrte_TypeCmd == typeCmd_Control){
+		StringBuffer dataMqtt;
+		Writer<StringBuffer> json(dataMqtt);
 		json.StartObject();
 			json.Key("CMD");json.String("ONOFF");
 			json.Key("DATA");
@@ -65,25 +64,32 @@ void RspOnoff(TS_GWIF_IncomingData *data) {
 				json.Key("VALUE_ONOFF");json.Int(onoffStatus);
 			json.EndObject();
 		json.EndObject();
+
+		string s = dataMqtt.GetString();
+		slog_info("<mqtt>send: %s", s.c_str());
+		Data2BufferSendMqtt(s);
 	} else if (vrte_TypeCmd == typeCmd_Update){
-		json.StartObject();
-			json.Key("CMD");json.String("UPDATE");
-			json.Key("DATA");
-			json.StartObject();
-				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-				json.Key("PROPERTIES");
-				json.StartArray();
-					json.StartObject();
-						json.Key("ID");json.Int(PROPERTY_ONOFF);
-						json.Key("VALUE");json.Int(onoffStatus);
-					json.EndObject();
-				json.EndArray();
-			json.EndObject();
-		json.EndObject();
+		StringBuffer dataMqtt1;
+		Writer<StringBuffer> json1(dataMqtt1);
+		json1.StartObject();
+			json1.Key("CMD");json1.String("UPDATE");
+			json1.Key("DATA");
+			json1.StartObject();
+				json1.Key("DEVICE_UNICAST_ID");json1.Int(adr);
+				json1.Key("PROPERTIES");
+				json1.StartArray();
+					json1.StartObject();
+						json1.Key("ID");json1.Int(PROPERTY_ONOFF);
+						json1.Key("VALUE");json1.Int(onoffStatus);
+					json1.EndObject();
+				json1.EndArray();
+			json1.EndObject();
+		json1.EndObject();
+
+		string s1 = dataMqtt1.GetString();
+//		slog_info("<mqtt>send: %s", s1.c_str());
+		Data2BufferSendMqtt(s1);
 	}
-	string s = dataMqtt.GetString();
-	slog_info("<mqtt>send: %s", s.c_str());
-	Data2BufferSendMqtt(s);
 }
 
 void RspCCT(TS_GWIF_IncomingData *data) {
@@ -168,7 +174,7 @@ void RspDim_CCT(TS_GWIF_IncomingData *data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	slog_info("<mqtt>send: %s", s.c_str());
+//	slog_info("<mqtt>send: %s", s.c_str());
 	Data2BufferSendMqtt(s);
 }
 
@@ -178,9 +184,9 @@ void RspHSL(TS_GWIF_IncomingData *data) {
 	int s_value = data->Message[11] | (data->Message[12] << 8);
 	int l_value = data->Message[7] | (data->Message[8] << 8);
 
-	StringBuffer dataMqtt;
-	Writer<StringBuffer> json(dataMqtt);
+	StringBuffer dataMqtt, dataMqtt1;
 	if(vrte_TypeCmd == typeCmd_Control){
+		Writer<StringBuffer> json(dataMqtt);
 		json.StartObject();
 			json.Key("CMD");json.String("HSL");
 			json.Key("DATA");
@@ -191,35 +197,41 @@ void RspHSL(TS_GWIF_IncomingData *data) {
 				json.Key("VALUE_L");json.Int(l_value);
 			json.EndObject();
 		json.EndObject();
-	} else if (vrte_TypeCmd == typeCmd_Update){
-		json.StartObject();
-			json.Key("CMD");json.String("UPDATE");
-			json.Key("DATA");
-			json.StartObject();
-				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-				json.Key("PROPERTIES");
-				json.StartArray();
-					json.StartObject();
-						json.Key("ID");json.Int(PROPERTY_H);
-						json.Key("VALUE");json.Int(h_value);
-					json.EndObject();
-					json.StartObject();
-						json.Key("ID");json.Int(PROPERTY_S);
-						json.Key("VALUE");json.Int(s_value);
-					json.EndObject();
-					json.StartObject();
-						json.Key("ID");json.Int(PROPERTY_L);
-						json.Key("VALUE");json.Int(l_value);
-					json.EndObject();
-				json.EndArray();
-			json.EndObject();
-		json.EndObject();
-	}
 
-//	cout << dataMqtt.GetString() << endl;
-	string s = dataMqtt.GetString();
-	slog_info("<mqtt>send: %s", s.c_str());
-	Data2BufferSendMqtt(s);
+		//	cout << dataMqtt.GetString() << endl;
+		string s = dataMqtt.GetString();
+		slog_info("<mqtt>send: %s", s.c_str());
+		Data2BufferSendMqtt(s);
+	} else if (vrte_TypeCmd == typeCmd_Update){
+		Writer<StringBuffer> json1(dataMqtt1);
+		json1.StartObject();
+			json1.Key("CMD");json1.String("UPDATE");
+			json1.Key("DATA");
+			json1.StartObject();
+				json1.Key("DEVICE_UNICAST_ID");json1.Int(adr);
+				json1.Key("PROPERTIES");
+				json1.StartArray();
+					json1.StartObject();
+						json1.Key("ID");json1.Int(PROPERTY_H);
+						json1.Key("VALUE");json1.Int(h_value);
+					json1.EndObject();
+					json1.StartObject();
+						json1.Key("ID");json1.Int(PROPERTY_S);
+						json1.Key("VALUE");json1.Int(s_value);
+					json1.EndObject();
+					json1.StartObject();
+						json1.Key("ID");json1.Int(PROPERTY_L);
+						json1.Key("VALUE");json1.Int(l_value);
+					json1.EndObject();
+				json1.EndArray();
+			json1.EndObject();
+		json1.EndObject();
+
+		//	cout << dataMqtt.GetString() << endl;
+		string s1 = dataMqtt1.GetString();
+//		slog_info("<mqtt>send: %s", s1.c_str());
+		Data2BufferSendMqtt(s1);
+	}
 }
 
 void RspAddDelGroup(TS_GWIF_IncomingData *data) {
@@ -269,12 +281,12 @@ void RspAddDelSceneLight(TS_GWIF_IncomingData *data) {
 		sceneAddId = g_listAdrScene[indexScene][1];
 		g_listAdrScene[indexScene][0] = 0;
 		g_listAdrScene[indexScene][1] = 0;
-		slog_info("Xoa mang");
-		for(int m = 0;m < MAX_DEV; m++){
-			if (g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0) {
-				slog_print(SLOG_INFO, 1, "<%d>:%d- %d", m, g_listAdrScene[m][0], g_listAdrScene[m][1]);
-			}
-		}
+//		slog_info("Xoa mang");
+//		for(int m = 0;m < MAX_DEV; m++){
+//			if (g_listAdrScene[m][0] != 0 && g_listAdrScene[m][1] != 0) {
+//				slog_print(SLOG_INFO, 1, "<%d>:%d- %d", m, g_listAdrScene[m][0], g_listAdrScene[m][1]);
+//			}
+//		}
 		pthread_mutex_unlock(&vrpth_DelScene);
 	}
 	StringBuffer dataMqtt;
@@ -374,7 +386,7 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 			json.EndObject();
 		json.EndObject();
 		string s = dataMqtt.GetString();
-		slog_info("<mqtt>send: %s", s.c_str());
+//		slog_info("<mqtt>send: %s", s.c_str());
 		Data2BufferSendMqtt(s);
 	} else if ((data->Message[7] == ((CALLMODE_RGB >> 8) & 0xFF))
 			&& (data->Message[8] == (CALLMODE_RGB & 0xFF))) {

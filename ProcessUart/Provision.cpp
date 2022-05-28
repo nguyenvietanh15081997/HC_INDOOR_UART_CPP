@@ -29,7 +29,7 @@ uint8_t setpro_internal[]       =   {0xe9, 0xff, 0x09, 0x00, 0x00, 0x00, 0x00, 0
 uint8_t admit_pro_internal[]    =   {0xe9, 0xff, 0x0d, 0x01, 0x00, 0xff, 0xfb, 0xeb, 0xbf, 0xea, 0x06, 0x09, 0x00, 0x52, 0x90, 0x49, 0xf1, 0xf1, 0xbb, 0xe9, 0xeb};
 
 // Neu provision den loi thi reset unicast de gw dam bao so luong thiet bi quan ly
-uint8_t reset_Node[]     		= 	{0xe9, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x49};
+uint8_t reset_Node[]     		= 	{0xe8, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x49};
 
 uint8_t PRO_deviceKeyGw[37] = {0};
 uint8_t PRO_deviceKey[37] = {0};
@@ -164,15 +164,16 @@ static void TimeoutPro(void) {
 		timeLast = time(NULL);
 		if ((timeLast - timeCurrent) >= TIMEOUT_PRO) {
 			timeCurrent = timeLast;
-			stateProvision = statePro_scan;
 			reset_Node[8] = adr_Provision & 0xFF;
 			reset_Node[9] = (adr_Provision >> 8) & 0xFF;
 			bufferDataUart.push_back(AssignData(reset_Node, 12));
+			sleep(1);
+			stateProvision = statePro_scan;
 		}
 		usleep(5000);
 	}
 }
-static void FinddDev(){
+static void FinddDev(void){
 	while (stateProvision == statePro_findDev) {
 		timeLast = time(NULL);
 		if ((timeLast - timeCurrent) >= TIMEOUT_FINDDEV) {
@@ -182,7 +183,7 @@ static void FinddDev(){
 		usleep(5000);
 	}
 }
-static void Pro_null(){
+static void Pro_null(void){
 }
 
 void (*state_Table[])(void) = { Pro_Scan, Pro_Stop, Pro_SelectMac, Pro_GetPro,
@@ -200,6 +201,7 @@ void *Pro_Thread(void *argv){
 		}
 		usleep(1000);
 	}
+	pthread_cancel(pthread_self());
 	return NULL;
 }
 

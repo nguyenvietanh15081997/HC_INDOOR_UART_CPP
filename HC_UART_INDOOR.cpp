@@ -7,7 +7,6 @@
 //============================================================================
 
 #include "ProcessUart/GateInterface.hpp"
-#include "ProcessUart/Provision.hpp"
 #include "Mqtt/Mqtt.hpp"
 #include "logging/slog.h"
 
@@ -20,7 +19,6 @@ int main() {
 	slog_init("logfile", SLOG_FLAGS_ALL, 1);
 	slog_config_get(&slgCfg);
 	slog_config_set(&slgCfg);
-
 
 	pthread_create(&vrpth_MqttThread, NULL, MQTT_Thread, NULL);
 	pthread_create(&vrpth_UartReadThread, NULL, GWINF_Thread, NULL);
