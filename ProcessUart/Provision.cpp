@@ -15,6 +15,7 @@
 
 using namespace std;
 using namespace rapidjson;
+bool provisionSuccess = false;
 
 uint8_t OUTMESSAGE_ScanStop[3]     = {0xE9, 0xFF, 0x01};
 uint8_t OUTMESSAGE_ScanStart[3]    = {0xE9, 0xFF, 0x00};
@@ -133,6 +134,7 @@ static void Pro_Provision(void) {
 	bufferDataUart.push_back(AssignData(OUTMESSAGE_Provision, 28));
 	slog_print(SLOG_INFO, 1, "<provision>provision");
 	stateProvision = statePro_timeoutPro;
+	provisionSuccess = false;
 	timeCurrent = time(NULL);
 }
 static void Pro_BindingAll(void) {
@@ -179,6 +181,7 @@ static void FinddDev(void){
 		if ((timeLast - timeCurrent) >= TIMEOUT_FINDDEV) {
 			timeCurrent = timeLast;
 			stateProvision = statePro_stop;
+			provisionSuccess = true;
 		}
 		usleep(5000);
 	}

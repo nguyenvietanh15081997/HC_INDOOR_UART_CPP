@@ -120,6 +120,11 @@ static void Stop(char *msg) {
 		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
 		gvrb_Provision = false;
 		stateProvision = statePro_stop;
+		if(!provisionSuccess) {
+			FunctionPer(HCI_CMD_GATEWAY_CMD, ResetNode_typedef, adr_Provision,
+					NULL8, NULL8, NULL16, NULL16, NULL16, NULL16,
+					NULL16, NULL16, NULL16, NULL16, 12);
+		}
 	}
 
 	StringBuffer sendToDB;

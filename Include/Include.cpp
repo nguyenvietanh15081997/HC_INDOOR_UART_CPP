@@ -35,7 +35,7 @@ uartSendDev_t AssignData(uint8_t *data,int length){
 	uartSendDev_t dataSendUart;
 	dataSendUart.length = length;
 	memcpy((uint8_t *)(&dataSendUart.dataUart.HCI_CMD_GATEWAY[0]), data, length);
-	dataSendUart.timeWait = 0;
+	dataSendUart.timeWait = 10;
 #if 0
 	for (int i = 0; i < length; i++) {
 		printf("%x ", data[i]);

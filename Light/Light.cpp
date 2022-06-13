@@ -385,9 +385,9 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 				json.EndArray();
 			json.EndObject();
 		json.EndObject();
-		string s = dataMqtt.GetString();
+		string s1 = dataMqtt.GetString();
 //		slog_info("<mqtt>send: %s", s.c_str());
-		Data2BufferSendMqtt(s);
+		Data2BufferSendMqtt(s1);
 	} else if ((data->Message[7] == ((CALLMODE_RGB >> 8) & 0xFF))
 			&& (data->Message[8] == (CALLMODE_RGB & 0xFF))) {
 		uint8_t modeRgb = data->Message[9];
@@ -403,9 +403,9 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 			json.EndObject();
 
 		//	cout << dataMqtt.GetString() << endl;
-			string s = dataMqtt.GetString();
-			slog_info("<mqtt>send: %s", s.c_str());
-			Data2BufferSendMqtt(s);
+			string s2 = dataMqtt.GetString();
+			slog_info("<mqtt>send: %s", s2.c_str());
+			Data2BufferSendMqtt(s2);
 		}
 	}
 }

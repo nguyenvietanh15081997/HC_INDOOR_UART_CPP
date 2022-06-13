@@ -28,6 +28,7 @@ extern uint8_t PRO_uuid[37];
 extern uint8_t PRO_mac[24];
 
 extern unsigned int adr_Provision;
+extern bool provisionSuccess;
 extern pthread_t vrpth_Pro;
 
 

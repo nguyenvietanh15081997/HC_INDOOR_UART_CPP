@@ -490,6 +490,7 @@ static int GWIF_ProcessData (void)
 						}
 						else if((headVendor == HEADER_TYPE_SET) || (headVendor == HEADER_TYPE_ASK)){
 							stateProvision = statePro_scan;
+							provisionSuccess = true;
 							RspTypeDevice(vrts_GWIF_IncomeMessage);
 						}
 					}

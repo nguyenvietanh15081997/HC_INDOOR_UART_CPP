@@ -84,7 +84,7 @@ static void LogSizeMem(){
 	fp = popen("ps | grep 'SYSTEM' | grep -v \"grep\"", "r");
 	if (fp == NULL) {
 		printf("Failed to run command");
-	exit(1);
+		exit(1);
 	}
 	while (fgets(path, sizeof(path), fp) != NULL) {
 		break;

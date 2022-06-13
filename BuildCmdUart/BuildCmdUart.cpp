@@ -7,7 +7,7 @@
 #define TIMEWAIT_UPDATE		3000
 #define TIMEWAIT			500
 #define TIMECONFIGROOM  	900
-#define TIMEWAIT_REMOTE		600
+#define TIMEWAIT_REMOTE		400
 
 static uint8_t parRetry_cnt = 0x00;
 static uint8_t parRsp_Max = 0x00;
@@ -76,15 +76,15 @@ static void CmdAddGroup(uint16_t uniAdrAddGroup, uint16_t adrGroup) {
 	vrts_CMD_STRUCTURE.para[5] = 0x10;
 }
 
-static void CmdDelGroup(uint16_t uniAdrAddGroup, uint8_t adrGroup) {
+static void CmdDelGroup(uint16_t uniAdrAddGroup, uint16_t adrGroup) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrAddGroup & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (uniAdrAddGroup >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = CFG_MODEL_SUB_DEL & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (CFG_MODEL_SUB_DEL >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[0] = uniAdrAddGroup & 0xFF;
 	vrts_CMD_STRUCTURE.para[1] = (uniAdrAddGroup >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[2] = adrGroup;
-	vrts_CMD_STRUCTURE.para[3] = 0xC0;
+	vrts_CMD_STRUCTURE.para[2] = adrGroup & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = (adrGroup >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = 0x00;
 	vrts_CMD_STRUCTURE.para[5] = 0x10;
 }

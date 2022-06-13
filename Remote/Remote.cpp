@@ -56,14 +56,14 @@ void RspAddSceneRemote(TS_GWIF_IncomingData *data) {
 	remoteRspAddScene_t vrts_RemoteRspAddScene;
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	vrts_RemoteRspAddScene.typeRemote = data->Message[8] | (data->Message[9] << 8);
-	cout << vrts_RemoteRspAddScene.typeRemote << endl;
+//	cout << vrts_RemoteRspAddScene.typeRemote << endl;
 	string cmdTypeRM = "";
 	if (vrts_RemoteRspAddScene.typeRemote == HEADER_SCENE_REMOTE_DC_SET) {
 		cmdTypeRM = "ADDSCENE_REMOTE_DC";
 	} else if (vrts_RemoteRspAddScene.typeRemote == HEADER_SCENE_REMOTE_AC_SET) {
 		cmdTypeRM = "ADDSCENE_REMOTE_AC";
 	}
-	cout << cmdTypeRM << endl;
+//	cout << cmdTypeRM << endl;
 	vrts_RemoteRspAddScene.buttonId = data->Message[10];
 	vrts_RemoteRspAddScene.modeId	= data->Message[11];
 	vrts_RemoteRspAddScene.sceneId 	= data->Message[12] | (data->Message[13] << 8);
