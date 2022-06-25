@@ -78,7 +78,7 @@ static bool CheckFile (const std::string& name) {
 static time_t t1,t2;
 static void LogSizeMem(){
 	t1 = time(NULL);
-	if ((t1 - t2) > 60){
+	if ((t1 - t2) > 300){
 	FILE *fp;
 	char path[128];
 	fp = popen("ps | grep 'SYSTEM' | grep -v \"grep\"", "r");

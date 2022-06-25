@@ -386,7 +386,7 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 			json.EndObject();
 		json.EndObject();
 		string s1 = dataMqtt.GetString();
-//		slog_info("<mqtt>send: %s", s.c_str());
+//		slog_info("<mqtt>send: %s", s1.c_str());
 		Data2BufferSendMqtt(s1);
 	} else if ((data->Message[7] == ((CALLMODE_RGB >> 8) & 0xFF))
 			&& (data->Message[8] == (CALLMODE_RGB & 0xFF))) {
@@ -485,3 +485,23 @@ void RspResetNode (TS_GWIF_IncomingData *data){
 	Data2BufferSendMqtt(s);
 }
 
+void RspTTLSTATUS(TS_GWIF_IncomingData *data) {
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint8_t ttl_status = data->Message[7];
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("TTL");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("TTL"); json.Int(ttl_status);
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s = dataMqtt.GetString();
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
+}

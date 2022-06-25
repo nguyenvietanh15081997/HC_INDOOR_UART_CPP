@@ -133,32 +133,42 @@ static void InitFramUart(){
 }
 
 #define SWITCH_TIME_WAIT		500
+#define SWITCH_TIME_WAIT_UPD	3000
 void Switch_Send_Uart(switch_enum_cmd typeCmd, uint16_t typeSw, uint16_t adr,
 		uint8_t relayId, uint8_t relayValue, uint8_t relay1, uint8_t relay2,
 		uint8_t relay3, uint8_t relay4, uint16_t sceneId) {
 	uint16_t cmdLength = 0;
+	uint64_t sw_timewait;
 	InitFramUart();
 	if(typeCmd == switch_enum_control){
 		Switch_Control(typeSw, adr, relayId, relayValue);
 		cmdLength = SWITCH_LENGTH_CONTROL;
+		sw_timewait = SWITCH_TIME_WAIT;
 	} else if (typeCmd == switch_enum_addscene) {
 		Switch_Scene_Set(typeSw, adr, relay1, relay2, relay3, relay4, sceneId);
 		cmdLength = SWITCH_LENGTH_SCENE_SET;
+		sw_timewait = SWITCH_TIME_WAIT;
 	} else if (typeCmd == switch_enum_delscene) {
 		Switch_Scene_Del(typeSw, adr, sceneId);
 		cmdLength = SWITCH_LENGTH_SCENE_DEL;
+		sw_timewait = SWITCH_TIME_WAIT;
 	} else if (typeCmd == switch_enum_status){
 		Switch_RequestStatus(typeSw,adr);
 		cmdLength = SWITCH_LENGTH_STATUS;
+		sw_timewait = SWITCH_TIME_WAIT_UPD;
 	}
 
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
-	vrts_DataUartSend.timeWait = SWITCH_TIME_WAIT;
+	vrts_DataUartSend.timeWait = sw_timewait;
+
 	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
-	bufferDataUart.push_back(vrts_DataUartSend);
-//	head = AddTail(vrts_CMD_STRUCTURE);
+	if (typeCmd == switch_enum_status){
+		bufferUartUpdate.push_back(vrts_DataUartSend);
+	} else {
+		bufferDataUart.push_back(vrts_DataUartSend);
+	}
 	pthread_mutex_unlock(&vrpth_SendUart);
 }
 
@@ -306,6 +316,6 @@ void Rsp_Switch_RequestStatus(TS_GWIF_IncomingData * data){
 
 //	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
-	slog_info("<mqtt>send: %s", s.c_str());
+//	slog_info("<mqtt>send: %s", s.c_str());
 	Data2BufferSendMqtt(s);
 }

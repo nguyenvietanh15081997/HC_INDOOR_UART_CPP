@@ -210,9 +210,9 @@ typedef enum{
 
 	DimPercent_vendor_typedef,
 
-	IRControl_vendor_typedef,
-	IRLearning_vendor_typedef,
-	IrSendData_vendor_typedef
+	TTL_Set_typedef,
+	TTL_Get_typedef
+
 } functionTypeDef;
 
 typedef enum{

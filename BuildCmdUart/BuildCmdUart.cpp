@@ -282,6 +282,21 @@ static void CmdOnOff_Get(uint16_t adr){
 	vrts_CMD_STRUCTURE.opCode[1] = (G_ONOFF_GET >> 8) & 0xFF;
 }
 
+static void CmdTTL_Set (uint16_t adr, uint8_t ttl) {
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = CFG_DEFAULT_TTL_SET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (CFG_DEFAULT_TTL_SET >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = ttl & 0xFF;
+}
+
+static void CmdTTL_Get (uint16_t adr) {
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = CFG_DEFAULT_TTL_GET & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = (CFG_DEFAULT_TTL_GET >> 8) & 0xFF;
+}
+
 #define UPDATE_HEADER		(0x02)
 #define UPDATE_LENGTH		(18)
 void CmdUpdateLight(uint16_t cmd, uint16_t adr) {
@@ -443,6 +458,12 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	else if(Func == DelSceneRgb_vendor_typedef){
 		gSceneIdDel = parSenceId;
 		CmdDelSence(unicastAdr,parSenceId);
+	}
+	else if(Func == TTL_Get_typedef) {
+		CmdTTL_Get(unicastAdr);
+	}
+	else if(Func == TTL_Set_typedef) {
+		CmdTTL_Set(unicastAdr,parStatusOnOff);
 	}
 	uartSendDev_t vrts_DataUartSend;
 	vrts_DataUartSend.length = cmdLength;

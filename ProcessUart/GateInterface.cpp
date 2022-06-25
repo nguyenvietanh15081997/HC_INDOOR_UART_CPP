@@ -299,7 +299,7 @@ typedef struct processRsp{
 	cb_rsp_function_t 	rspFuncProcess;
 } proccessRsp_t;
 
-#define MAX_FUNCTION_RSP			11
+#define MAX_FUNCTION_RSP			12
 proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
 		{LIGHT_CTL_STATUS,					RspDim_CCT},
 		{G_ONOFF_STATUS,					RspOnoff},
@@ -311,7 +311,8 @@ proccessRsp_t listRspFunction[MAX_FUNCTION_RSP] = {
 		{SCENE_STATUS,						RspCallScene},
 		{G_BATTERY_STATUS,					RspPowerRemoteStatus},
 		{NODE_RESET_STATUS,					RspResetNode},
-		{LIGHTNESS_LINEAR_STATUS,			RspCallModeRgb_UpdateLight}
+		{LIGHTNESS_LINEAR_STATUS,			RspCallModeRgb_UpdateLight},
+		{CFG_DEFAULT_TTL_STATUS,			RspTTL}
 };
 
 typedef struct processRspVendor{

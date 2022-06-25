@@ -160,7 +160,8 @@ static void Update(char *msg) {
 						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
-								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04) {
+								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04
+								|| typeDev == CONG_TAC_BINH_NONG_LANH) {
 							Switch_Send_Uart(switch_enum_status, typeDev, adr,
 									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
 									NULL16);
@@ -1507,6 +1508,49 @@ static void RequestStatusSensor(char *msg) {
 	}
 }
 
+static void TTL_Set (char *msg) {
+	Document document;
+	document.Parse(msg);
+
+	uint16_t adr;
+	uint8_t ttl;
+
+	if (document.IsObject()) {
+		if (document.HasMember("DATA")){
+			const Value& data = document["DATA"];
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()
+					&& data.HasMember("TTL") && data["TTL"].IsInt()) {
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				ttl = data["TTL"].GetInt();
+				FunctionPer(HCI_CMD_GATEWAY_CMD, TTL_Set_typedef, adr,
+						NULL8, ttl, NULL16, NULL16, NULL16,
+						NULL16, NULL16, NULL16, NULL16, NULL16,
+						14);
+			}
+		}
+	}
+}
+
+static void TTL_Get (char *msg) {
+	Document document;
+	document.Parse(msg);
+
+	uint16_t adr;
+
+	if (document.IsObject()) {
+		if (document.HasMember("DATA")){
+			const Value& data = document["DATA"];
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()) {
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				FunctionPer(HCI_CMD_GATEWAY_CMD, TTL_Get_typedef, adr,
+						NULL8, NULL8, NULL16, NULL16, NULL16,
+						NULL16, NULL16, NULL16, NULL16, NULL16,
+						14);
+			}
+		}
+	}
+}
+
 static void StartConfigRoom(char *msg){
 	startProcessRoom = true;
 }
@@ -1559,7 +1603,7 @@ static void DeviceControl(char *msg){
 
 }
 
-#define MAX_FUNCTION					55
+#define MAX_FUNCTION					57
 functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"DEVICE_CONTROL",              (DeviceControl)},
 		{"ONOFF",						(OnOff)},
@@ -1616,7 +1660,9 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"START_PROCESS_ROOM",			(StartConfigRoom)},
 		{"STOP_PROCESS_ROOM",			(StopConfigRoom)},
 		{"DELHC",						(DelHc)},
-		{"BACKUP_BLE",					(Backup_Ble)}
+		{"BACKUP_BLE",					(Backup_Ble)},
+		{"TTL_SET",						(TTL_Set)},
+		{"TTL_GET",						(TTL_Get)}
 };
 
 void JsonHandle(char * data) {
