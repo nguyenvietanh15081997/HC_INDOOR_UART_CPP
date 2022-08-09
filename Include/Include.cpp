@@ -8,6 +8,7 @@
 #include "Include.hpp"
 
 using namespace std;
+uartSendDev_t CmdPir[MAX_PIR] = {0,0,0};
 deque<uartSendDev_t> 	bufferDataUart;
 deque<uartSendDev_t>    bufferUartUpdate;
 deque<string> 			bufferSendMqtt;
@@ -49,5 +50,15 @@ void Data2BufferSendMqtt(string s) {
 	while(pthread_mutex_trylock(&vrpth_SendMqtt) != 0){};
 	bufferSendMqtt.push_back(s);
 	pthread_mutex_unlock(&vrpth_SendMqtt);
+}
+
+int Push2BufPirCmd(uartSendDev_t data){
+	for(int i = 0; i < MAX_PIR; i++){
+		if(CmdPir[i].length == 0) {
+			CmdPir[i] = data;
+			return 1;
+		}
+	}
+	return 0;
 }
 

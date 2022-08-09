@@ -12,10 +12,13 @@
 using namespace std;
 using namespace rapidjson;
 
-#define SWITCH_LENGTH_CONTROL		23
-#define SWITCH_LENGTH_SCENE_SET		23
-#define SWITCH_LENGTH_SCENE_DEL		19
-#define SWITCH_LENGTH_STATUS		17
+#define SWITCH_LENGTH_CONTROL			23
+#define SWITCH_LENGTH_SCENE_SET			23
+#define SWITCH_LENGTH_SCENE_DEL			19
+#define SWITCH_LENGTH_STATUS			17
+#define SWITCH_LENGTH_CONTROL_HSL		23
+#define SWITCH_LENGTH_CONTROL_COMBINE	23
+#define SWITCH_LENGTH_TIMER				23
 
 #define TYPE_BNL					22005
 
@@ -121,6 +124,60 @@ static void Switch_RequestStatus(uint16_t typeSw, uint16_t adr){
 	vrts_CMD_STRUCTURE.para[4] = (listOpcodeStatus[IndexType(typeSw)] >> 8) & 0xFF;
 }
 
+static void Switch_ControlHSL(uint16_t adr, uint16_t h, uint16_t s, uint16_t l) {
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = SWITCH_CONTROL_HSL & 0xFF;
+	vrts_CMD_STRUCTURE.para[4] = (SWITCH_CONTROL_HSL >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[5] = h & 0xFF;
+	vrts_CMD_STRUCTURE.para[6] = (h >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[7] = s & 0xFF;
+	vrts_CMD_STRUCTURE.para[8] = (s >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[9] = l & 0xFF;
+	vrts_CMD_STRUCTURE.para[10] = (l >> 8) & 0xFF;
+}
+
+static void Switch_ControlCombine(uint16_t adr, uint16_t id){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = SWITCH_CONTROL_COMBINE & 0xFF;
+	vrts_CMD_STRUCTURE.para[4] = (SWITCH_CONTROL_COMBINE >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[5] = id & 0xFF;
+	vrts_CMD_STRUCTURE.para[6] = (id >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[7] = 0;
+	vrts_CMD_STRUCTURE.para[8] = 0;
+	vrts_CMD_STRUCTURE.para[9] = 0;
+	vrts_CMD_STRUCTURE.para[10] = 0;
+}
+
+static void Switch_Timer(uint16_t adr, uint8_t status, uint32_t time){
+	vrts_CMD_STRUCTURE.adr_dst[0] = adr & 0xFF;
+	vrts_CMD_STRUCTURE.adr_dst[1] = (adr >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
+	vrts_CMD_STRUCTURE.opCode[1] = VENDOR_ID & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = (VENDOR_ID >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = STATUS_CMD_SCENE & 0xFF;
+	vrts_CMD_STRUCTURE.para[2] = (STATUS_CMD_SCENE >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[3] = SWITCH_TIMER & 0xFF;
+	vrts_CMD_STRUCTURE.para[4] = (SWITCH_TIMER >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[5] = status & 0xFF;
+	vrts_CMD_STRUCTURE.para[6] = (time >> 24) & 0xFF;
+	vrts_CMD_STRUCTURE.para[7] = (time >> 16) & 0xFF;
+	vrts_CMD_STRUCTURE.para[8] = (time >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[9] = time & 0xFF;
+	vrts_CMD_STRUCTURE.para[10] = 0;
+}
+
 static void InitFramUart(){
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0]	= switch_cmd & 0xFF;
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[1]	= (switch_cmd>>8) & 0xFF;
@@ -136,7 +193,7 @@ static void InitFramUart(){
 #define SWITCH_TIME_WAIT_UPD	3000
 void Switch_Send_Uart(switch_enum_cmd typeCmd, uint16_t typeSw, uint16_t adr,
 		uint8_t relayId, uint8_t relayValue, uint8_t relay1, uint8_t relay2,
-		uint8_t relay3, uint8_t relay4, uint16_t sceneId) {
+		uint8_t relay3, uint8_t relay4, uint16_t sceneId, uint16_t h, uint16_t s, uint16_t l, uint32_t time) {
 	uint16_t cmdLength = 0;
 	uint64_t sw_timewait;
 	InitFramUart();
@@ -156,6 +213,18 @@ void Switch_Send_Uart(switch_enum_cmd typeCmd, uint16_t typeSw, uint16_t adr,
 		Switch_RequestStatus(typeSw,adr);
 		cmdLength = SWITCH_LENGTH_STATUS;
 		sw_timewait = SWITCH_TIME_WAIT_UPD;
+	} else if (typeCmd == switch_enum_control_hsl) {
+		Switch_ControlHSL(adr, h, s, l);
+		sw_timewait = SWITCH_TIME_WAIT_UPD;
+		cmdLength = SWITCH_LENGTH_CONTROL_HSL;
+	} else if (typeCmd == switch_enum_control_combine) {
+		Switch_ControlCombine(adr, sceneId);
+		sw_timewait = SWITCH_TIME_WAIT_UPD;
+		cmdLength = SWITCH_LENGTH_CONTROL_COMBINE;
+	} else if (typeCmd ==  switch_enum_timer) {
+		Switch_Timer(adr, relayId, time);
+		sw_timewait = SWITCH_TIME_WAIT_UPD;
+		cmdLength = SWITCH_LENGTH_TIMER;
 	}
 
 	uartSendDev_t vrts_DataUartSend;
@@ -318,4 +387,85 @@ void Rsp_Switch_RequestStatus(TS_GWIF_IncomingData * data){
 	string s = dataMqtt.GetString();
 //	slog_info("<mqtt>send: %s", s.c_str());
 	Data2BufferSendMqtt(s);
+}
+
+void Rsp_Switch_ControlRGB (TS_GWIF_IncomingData *data){
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint16_t h = data->Message[10] | (data->Message[11] << 8);
+	uint16_t s = data->Message[12] | (data->Message[13] << 8);
+	uint16_t l = data->Message[14] | (data->Message[15] << 8);
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("DEVICE_CONTROL");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("PROPERTIES");
+			json.StartArray();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_H);
+				json.Key("VALUE"); json.Int(h);
+			json.EndObject();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_S);
+				json.Key("VALUE"); json.Int(s);
+			json.EndObject();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_L);
+				json.Key("VALUE"); json.Int(l);
+			json.EndObject();
+			json.EndArray();
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s1 = dataMqtt.GetString();
+//	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s1);
+}
+
+void Rsp_Switch_Control_Combine (TS_GWIF_IncomingData * data) {
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint16_t id = data->Message[10] | (data->Message[11] << 8);
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("SWITCH_CONTROL_COMBINE");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("ID"); json.Int(id);
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s1 = dataMqtt.GetString();
+//	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s1);
+}
+
+void Rsp_Switch_Timer (TS_GWIF_IncomingData * data) {
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint8_t status = data->Message[10];
+	uint32_t time = (data->Message[11] << 24) | (data->Message[12] << 16) | (data->Message[13] << 8) | data->Message[14];
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("SWITCH_COUNTDOWN");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("STATUS"); json.Int(status);
+			json.Key("TIME"); json.Int64(time);
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s1 = dataMqtt.GetString();
+//	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s1);
 }

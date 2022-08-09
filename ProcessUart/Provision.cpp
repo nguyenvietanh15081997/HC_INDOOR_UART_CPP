@@ -6,6 +6,7 @@
 #include "../Include/Include.hpp"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 #include "../Mqtt/Mqtt.hpp"
+#include "AES.h"
 
 #include <sys/time.h>
 
@@ -31,6 +32,18 @@ uint8_t admit_pro_internal[]    =   {0xe9, 0xff, 0x0d, 0x01, 0x00, 0xff, 0xfb, 0
 
 // Neu provision den loi thi reset unicast de gw dam bao so luong thiet bi quan ly
 uint8_t reset_Node[]     		= 	{0xe8, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x49};
+
+//save gateway
+uint8_t save_gw[]				=	{0xe8, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0x11, 0x02, 0xe1, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t request_type[]			= 	{0xe8, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0x11, 0x02, 0xe1, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+//Aes
+int plainLength = 32;
+//static uint8_t keyAes[] 		= 	{0x44, 0x69, 0x67, 0x69, 0x74, 0x61, 0x6c, 0x40, 0x32, 0x38, 0x31, 0x31, 0x32, 0x38, 0x30, 0x34};
+//uint8_t plaintext[]		=	{0x24, 0x02, 0x28, 0x04, 0x28, 0x11, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+static uint8_t keyAes[] 		= 	{0x56, 0x49, 0x45, 0x54, 0x54, 0x45, 0x4c, 0x5f, 0x52, 0x26, 0x44, 0x28, 0x56, 0x48, 0x54, 0x29};
+uint8_t plaintext[]		=	{0x24, 0x02, 0x28, 0x04, 0x28, 0x11, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 uint8_t PRO_deviceKeyGw[37] = {0};
 uint8_t PRO_deviceKey[37] = {0};
@@ -145,18 +158,27 @@ static void Pro_BindingAll(void) {
 }
 static void Pro_SaveGate(void) {
 	sleep(1);
-	Function_Vendor(HCI_CMD_GATEWAY_CMD, SaveGateway_vendor_typedef,
-			adr_Provision, NULL16, NULL8, NULL8, NULL8, NULL16, NULL16,
-			NULL16, NULL16, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
-			NULL8, NULL16, 17);
+	save_gw[8] = adr_Provision;
+	save_gw[9] = (adr_Provision >> 8) & 0xFF;
+	bufferDataUart.push_back(AssignData(save_gw, 23));
 	stateProvision = statePro_timeoutPro;
 	timeCurrent = time(NULL);
 }
 static void Pro_TypeDev(void) {
-	Function_Vendor(HCI_CMD_GATEWAY_CMD, AskTypeDevice_vendor_typedef,
-			adr_Provision, NULL16, NULL8, NULL8, NULL8, NULL16, NULL16,
-			NULL16, NULL16, NULL16, NULL16, NULL16, NULL8, NULL8, NULL8,
-			NULL8, NULL16, 17);
+	request_type[8] = adr_Provision;
+	request_type[9] = (adr_Provision >> 8) & 0xFF;
+	plaintext[14] = adr_Provision;
+	plaintext[15] = (adr_Provision >> 8) & 0xFF;
+	AES aes(AESKeyLength::AES_128);
+	unsigned char *out = aes.EncryptECB(plaintext, plainLength, keyAes);
+	for(int j = 0; j < 32; j ++){
+		printf("%02x ",out[j]);
+	}
+	printf("\n");
+	for (int i = 0; i < 6; i++) {
+		request_type[i+17] = out[i+10];
+	}
+	bufferDataUart.push_back(AssignData(request_type, 23));
 	stateProvision = statePro_timeoutPro;
 	timeCurrent = time(NULL);
 }
@@ -186,12 +208,16 @@ static void FinddDev(void){
 		usleep(5000);
 	}
 }
-static void Pro_null(void){
+static void Pro_ResetNode(void){
+	reset_Node[8] = adr_Provision & 0xFF;
+	reset_Node[9] = (adr_Provision >> 8) & 0xFF;
+	bufferDataUart.push_back(AssignData(reset_Node, 12));
+	stateProvision = statePro_scan;
 }
 
 void (*state_Table[])(void) = { Pro_Scan, Pro_Stop, Pro_SelectMac, Pro_GetPro,
 		Pro_SetPro, Pro_Provision, Pro_BindingAll, Pro_SaveGate,
-		Pro_TypeDev, TimeoutPro, FinddDev, Pro_null};
+		Pro_TypeDev, TimeoutPro, FinddDev, Pro_ResetNode};
 
 static statePro_t stateCurrent, stateLast;
 void *Pro_Thread(void *argv){

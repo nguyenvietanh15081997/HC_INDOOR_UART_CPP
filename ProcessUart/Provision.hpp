@@ -27,6 +27,8 @@ extern uint8_t PRO_appKey[37];
 extern uint8_t PRO_uuid[37];
 extern uint8_t PRO_mac[24];
 
+extern uint8_t plaintext[];
+
 extern unsigned int adr_Provision;
 extern bool provisionSuccess;
 extern pthread_t vrpth_Pro;
@@ -44,8 +46,8 @@ typedef enum statePro{
 	statePro_setType,
 	statePro_timeoutPro,
 	statePro_findDev,
-	statePro_null,
-	statePro_waitSetPro
+	statePro_resetNode,
+	statePro_null
 
 }statePro_t;
 extern statePro_t stateProvision;

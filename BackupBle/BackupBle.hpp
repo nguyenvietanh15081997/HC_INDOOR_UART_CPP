@@ -12,11 +12,11 @@
 #include "../Include/Include.hpp"
 #include <sqlite3.h>
 
-void BACKUP_updateNetKey();
+void BACKUP_updateNetKey(char *db);
 void BACKUP_updateNewDevKey();
-void BACKUP_updateAppKey();
-void BACKUP_gw();
-void BACKUP_dev() ;
-void BACKUP_callback();
+void BACKUP_updateAppKey(char *db);
+void BACKUP_gw(char *db);
+void BACKUP_dev(char *db) ;
+void BACKUP_callback(char *dir);
 
 #endif /* BACKUPBLE_BACKUPBLE_HPP_ */

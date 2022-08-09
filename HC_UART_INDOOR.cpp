@@ -6,6 +6,7 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
+
 #include "ProcessUart/GateInterface.hpp"
 #include "Mqtt/Mqtt.hpp"
 #include "logging/slog.h"
@@ -27,3 +28,7 @@ int main() {
 	pthread_join(vrpth_UartReadThread,NULL);
 //	return 0;
 }
+
+
+
+

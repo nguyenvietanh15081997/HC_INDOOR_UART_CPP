@@ -110,11 +110,15 @@ typedef struct bufferDataMqtt{
 	char dataMqtt[MAX_MSG_MQTT];
 }bufferDataMqtt_t;
 
+#define MAX_PIR			100
+extern uartSendDev_t CmdPir[MAX_PIR];
 extern deque<uartSendDev_t> bufferDataUart;
 extern deque<uartSendDev_t> bufferUartUpdate;
 extern deque<string> 		bufferSendMqtt;
 uartSendDev_t AssignData(uint8_t *data,int length);
 
 void Data2BufferSendMqtt(string s);
+
+int Push2BufPirCmd(uartSendDev_t data);
 
 #endif /* INCLUDE_INCLUDE_HPP_ */

@@ -412,7 +412,8 @@ void RspCallModeRgb_UpdateLight(TS_GWIF_IncomingData *data){
 
 void RspSaveGw(TS_GWIF_IncomingData *data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint8_t adrGw = data->Message[3] | (data->Message[4] <<8);
+	uint16_t adrGw = data->Message[3] | (data->Message[4] <<8);
+	uint16_t provider = data->Message[12] | (data->Message[13]<<8);
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
@@ -421,6 +422,7 @@ void RspSaveGw(TS_GWIF_IncomingData *data){
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
 			json.Key("ADR_GW");json.Int(adrGw);
+			json.Key("PROVIDER");json.Int(provider);
 		json.EndObject();
 	json.EndObject();
 
@@ -439,31 +441,35 @@ static uint16_t TypeConvert(uint8_t type, uint8_t attribute, uint8_t appli) {
 }
 void RspTypeDevice(TS_GWIF_IncomingData *data){
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
-	uint16_t typeDev = TypeConvert(data->Message[10],data->Message[11],data->Message[12]);
-	char framVer[5] = {0};
-	sprintf((char *)framVer,"%d.%d",data->Message[14],data->Message[15]);
+	if (data->Message[10] == 0xFF && data->Message[11] == 0xFE && data->Message[12] == 0xFF && data->Message[13] == 0xFE && data->Message[14] == 0xFF && data->Message[15] == 0xFE){
+		stateProvision = statePro_resetNode;
+	} else {
+		uint16_t typeDev = TypeConvert(data->Message[10],data->Message[11],data->Message[12]);
+		char framVer[5] = {0};
+		sprintf((char *)framVer,"%d.%d",data->Message[14],data->Message[15]);
 
-	StringBuffer dataMqtt;
-	Writer<StringBuffer> json(dataMqtt);
-	json.StartObject();
-		json.Key("CMD");json.String("NEW_DEVICE");
-		json.Key("DATA");
+		StringBuffer dataMqtt;
+		Writer<StringBuffer> json(dataMqtt);
 		json.StartObject();
-			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-			json.Key("DEVICE_ID");json.String((char *)PRO_uuid);
-			json.Key("DEVICE_TYPE_ID");json.Int(typeDev);
-			json.Key("MAC_ADDRESS");json.String((char *)PRO_mac);
-			json.Key("FIRMWARE_VERSION");json.String((char *)framVer);
-			json.Key("DEVICE_KEY");json.String((char *)PRO_deviceKey);
-			json.Key("NET_KEY");json.String((char *)PRO_netKey);
-			json.Key("APP_KEY");json.String((char *)PRO_appKey);
+			json.Key("CMD");json.String("NEW_DEVICE");
+			json.Key("DATA");
+			json.StartObject();
+				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+				json.Key("DEVICE_ID");json.String((char *)PRO_uuid);
+				json.Key("DEVICE_TYPE_ID");json.Int(typeDev);
+				json.Key("MAC_ADDRESS");json.String((char *)PRO_mac);
+				json.Key("FIRMWARE_VERSION");json.String((char *)framVer);
+				json.Key("DEVICE_KEY");json.String((char *)PRO_deviceKey);
+				json.Key("NET_KEY");json.String((char *)PRO_netKey);
+				json.Key("APP_KEY");json.String((char *)PRO_appKey);
+			json.EndObject();
 		json.EndObject();
-	json.EndObject();
 
-//	cout << dataMqtt.GetString() << endl;
-	string s = dataMqtt.GetString();
-	slog_info("<mqtt>send: %s", s.c_str());
-	Data2BufferSendMqtt(s);
+	//	cout << dataMqtt.GetString() << endl;
+		string s = dataMqtt.GetString();
+		slog_info("<mqtt>send: %s", s.c_str());
+		Data2BufferSendMqtt(s);
+	}
 }
 
 void RspResetNode (TS_GWIF_IncomingData *data){

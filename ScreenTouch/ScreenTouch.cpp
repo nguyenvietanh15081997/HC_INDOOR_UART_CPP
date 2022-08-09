@@ -4,7 +4,7 @@
 #include "../ProcessUart/OpCode.h"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 
-#define LENGTH_ADDSCENE 			20
+#define LENGTH_ADDSCENE 			23
 #define LENGTH_DELSCENE				19
 #define LENGTH_EDIT_ICON			20
 #define LENGTH_WEATHER_OUT			20
@@ -35,7 +35,7 @@ static void initDataSend()
 	vrts_CMD_STRUCTURE.retry_cnt   			= st_parRetry_cnt;
 	vrts_CMD_STRUCTURE.rsp_max     			= st_parRsp_Max;
 }
-static void st_AddScene(uint16_t adrSt,uint16_t idScene, uint8_t idIcon){
+static void st_AddScene(uint16_t adrSt,uint16_t idScene, uint8_t idIcon, uint8_t typeScene){
 	initDataSend();
 	vrts_CMD_STRUCTURE.adr_dst[0] = adrSt & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (adrSt>>8) & 0xFF;
@@ -49,6 +49,10 @@ static void st_AddScene(uint16_t adrSt,uint16_t idScene, uint8_t idIcon){
 	vrts_CMD_STRUCTURE.para[5] = idScene & 0xFF;
 	vrts_CMD_STRUCTURE.para[6] = (idScene>>8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[7] = idIcon & 0xFF;
+	vrts_CMD_STRUCTURE.para[8] = typeScene;
+	for (int i = 0 ; i < 4; i ++) {
+		vrts_CMD_STRUCTURE.para[9+i] = 0;
+	}
 }
 static void st_Edit_Icon (uint16_t adrSt, uint16_t idScene, uint8_t idIcon){
 	initDataSend();
@@ -186,7 +190,7 @@ void SendData2ScreenTouch(tpd_enum_st data,uint16_t adr, uint16_t sceneId, uint8
 		uint8_t second) {
 	uint16_t cmdLength=0;
 	if(data == st_enum_addscene){
-		st_AddScene(adr,sceneId,iconId);
+		st_AddScene(adr,sceneId,iconId,statusWeather);
 		cmdLength = LENGTH_ADDSCENE;
 	}
 	else if (data == st_enum_delscene){

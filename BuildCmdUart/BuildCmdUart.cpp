@@ -473,23 +473,10 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	bufferDataUart.push_back(vrts_DataUartSend);
 	pthread_mutex_unlock(&vrpth_SendUart);
 
-#if !PRINTUART
-	printf("%x %x ",vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[0],vrts_DataUartSend.dataUart.HCI_CMD_GATEWAY[1]);
-	for (int i = 0; i < 4; i++) {
-		printf("%x ", vrts_DataUartSend.dataUart.opCode00[i]);
-	}
-	printf("%x %x ",vrts_DataUartSend.dataUart.retry_cnt, vrts_DataUartSend.dataUart.rsp_max);
-	printf("%x %x ",vrts_DataUartSend.dataUart.adr_dst[0],vrts_DataUartSend.dataUart.adr_dst[1]);
-	printf("%x %x ",vrts_DataUartSend.dataUart.opCode[0], vrts_DataUartSend.dataUart.opCode[1]);
-	for (int j = 0; j < vrts_DataUartSend.length - 12; j++) {
-		printf("%x ",vrts_DataUartSend.dataUart.para[j]);
-	}
-	printf("\n");
-#endif
 }
 
 static void SetSceneForRemote_DC(uint16_t adrRemote_DC, uint8_t buttonId,
-		uint8_t modeId, uint16_t sceneId, uint16_t appID, uint8_t SrgbID) {
+		uint8_t modeId, uint16_t sceneId, uint16_t appID, uint8_t SrgbID, uint8_t typeScene) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = adrRemote_DC & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (adrRemote_DC >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
@@ -503,17 +490,14 @@ static void SetSceneForRemote_DC(uint16_t adrRemote_DC, uint8_t buttonId,
 	vrts_CMD_STRUCTURE.para[6] = modeId;
 	vrts_CMD_STRUCTURE.para[7] = sceneId & 0xFF;
 	vrts_CMD_STRUCTURE.para[8] = (sceneId >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[9] = appID & 0xFF;
-	vrts_CMD_STRUCTURE.para[10] = (appID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[11] = SrgbID;
-	int i;
-	for (i = 0; i < 7; i++) {
-		vrts_CMD_STRUCTURE.para[i + 12] = 0;
-	}
+	vrts_CMD_STRUCTURE.para[9] = typeScene;
+	vrts_CMD_STRUCTURE.para[10] = 0;
+	vrts_CMD_STRUCTURE.para[11] = 0;
+	vrts_CMD_STRUCTURE.para[12] = 0;
 }
 
 static void SetSceneForRemote_AC(uint16_t adrRemote_AC, uint8_t buttonId,
-		uint8_t modeId, uint16_t sceneId, uint16_t appID, uint8_t SrgbID) {
+		uint8_t modeId, uint16_t sceneId, uint16_t appID, uint8_t SrgbID, uint8_t typeScene) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = adrRemote_AC & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (adrRemote_AC >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
@@ -527,13 +511,10 @@ static void SetSceneForRemote_AC(uint16_t adrRemote_AC, uint8_t buttonId,
 	vrts_CMD_STRUCTURE.para[6] = modeId;
 	vrts_CMD_STRUCTURE.para[7] = sceneId & 0xFF;
 	vrts_CMD_STRUCTURE.para[8] = (sceneId >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[9] = appID & 0xFF;
-	vrts_CMD_STRUCTURE.para[10] = (appID >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[11] = SrgbID;
-	int i;
-	for (i = 0; i < 7; i++) {
-		vrts_CMD_STRUCTURE.para[i + 12] = 0;
-	}
+	vrts_CMD_STRUCTURE.para[9] = typeScene;
+	vrts_CMD_STRUCTURE.para[10] = 0;
+	vrts_CMD_STRUCTURE.para[11] = 0;
+	vrts_CMD_STRUCTURE.para[12] = 0;
 }
 
 static void DelSceneForRemote_DC(uint16_t adrRemote_DC, uint8_t buttonId,
@@ -567,7 +548,7 @@ static void DelSceneForRemote_AC(uint16_t adrRemote_AC, uint8_t buttonId,
 }
 
 static void SetSceneForSensor_LightPir(uint16_t adrLightPir, uint16_t sceneID,
-		RD_Sensor_data_tdef dataScene_Pir_light) {
+		RD_Sensor_data_tdef dataScene_Pir_light, uint8_t typeScene) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = adrLightPir & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (adrLightPir >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = RD_OPCODE_SCENE_SEND & 0xFF;
@@ -582,7 +563,7 @@ static void SetSceneForSensor_LightPir(uint16_t adrLightPir, uint16_t sceneID,
 	vrts_CMD_STRUCTURE.para[7] = (dataScene_Pir_light.data >> 24) & 0xFF;
 	vrts_CMD_STRUCTURE.para[8] = (dataScene_Pir_light.data >> 16) & 0xFF;
 	vrts_CMD_STRUCTURE.para[9] = (dataScene_Pir_light.data >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[10] = 0x00;
+	vrts_CMD_STRUCTURE.para[10] = typeScene;
 }
 
 static void DelSceneForSensor_LightPir(uint16_t adrLightPir, uint16_t sceneID) {
@@ -1045,7 +1026,7 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_CMD_STRUCTURE.rsp_max = parRsp_Max;
 	uint16_t timeWait = TIMEWAIT;
 	if(Func_vendor == SceneForRemote_DC_vendor_typedef){
-		SetSceneForRemote_DC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID);
+		SetSceneForRemote_DC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID, status_door);
 		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == DelSceneForRemote_DC_vendor_typedef){
@@ -1053,7 +1034,7 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == SceneForRemote_AC_vendor_typedef){
-		SetSceneForRemote_AC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID);
+		SetSceneForRemote_AC(adr, buttonID_controlCurtain, modeID_percentOpen, sceneID, appID, srgbID, status_door);
 		timeWait = TIMEWAIT_REMOTE;
 	}
 	else if(Func_vendor == DelSceneForRemote_AC_vendor_typedef){
@@ -1066,7 +1047,7 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 		dataScene_Pir_Light_cmd1.Light_Conditon =(uint32_t)((condition_lightness)& 0x0000007);
 		dataScene_Pir_Light_cmd1.Lux_low = (uint32_t)(low_lux_switch1_2_socket1_2);
 		dataScene_Pir_Light_cmd1.Lux_hi = (uint32_t)(hight_lux_switch3_4_socket3_4);
-		SetSceneForSensor_LightPir(adr,sceneID,dataScene_Pir_Light_cmd1);
+		SetSceneForSensor_LightPir(adr,sceneID,dataScene_Pir_Light_cmd1,buttonID_controlCurtain);
 	}
 	else if(Func_vendor == DelSceneForSensor_LightPir_vendor_typedef){
 		DelSceneForSensor_LightPir(adr, sceneID);
@@ -1165,8 +1146,16 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_DataUartSend.length = cmdLength;
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
-	while(pthread_mutex_trylock(&vrpth_SendUart) != 0){};
-	bufferDataUart.push_back(vrts_DataUartSend);
+	while (pthread_mutex_trylock(&vrpth_SendUart) != 0) {};
+	if (Func_vendor == SetTimeAction_vendor_typedef
+			|| Func_vendor == SceneForSensor_LightPir_vendor_typedef
+			|| Func_vendor == DelSceneForSensor_LightPir_vendor_typedef
+			|| Func_vendor == SceneForSensor_Pir_vendor_typedef
+			|| Func_vendor == DelSceneForSensor_Pir_vendor_typedef) {
+		Push2BufPirCmd(vrts_DataUartSend);
+	} else {
+		bufferDataUart.push_back(vrts_DataUartSend);
+	}
 	pthread_mutex_unlock(&vrpth_SendUart);
 }
 

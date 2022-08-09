@@ -78,12 +78,12 @@ int BACKUP_getNetKey(void *data, int argc, char **argv, char **azColName) {
 /*
  * OpenDB(): open and query to db
  */
-int BACKUP_OpenDB(string sqlQuery, type_get_db type){
+int BACKUP_OpenDB(char * db, string sqlQuery, type_get_db type){
 	sqlite3 *DB;
 	char * msgError;
 	int open = 0;
 	do{
-		open = sqlite3_open("/root/rd.Sqlite",&DB);
+		open = sqlite3_open(db,&DB);
 	}while(open != SQLITE_OK);
 
 	if(type == inforGw) {
@@ -104,9 +104,9 @@ int BACKUP_OpenDB(string sqlQuery, type_get_db type){
 	return 0;
 }
 
-void BACKUP_updateNetKey() {
+void BACKUP_updateNetKey(char *db) {
 	string getNetKey = "SELECT DISTINCT NetKey from Device;";
-	BACKUP_OpenDB(getNetKey, infoNetKey);
+	BACKUP_OpenDB(db,getNetKey, infoNetKey);
 	BACKUP_netKeyDb.erase(BACKUP_netKeyDb.begin()+8, BACKUP_netKeyDb.begin()+9);
 	BACKUP_netKeyDb.erase(BACKUP_netKeyDb.begin()+12, BACKUP_netKeyDb.begin()+13);
 	BACKUP_netKeyDb.erase(BACKUP_netKeyDb.begin()+16, BACKUP_netKeyDb.begin()+17);
@@ -158,9 +158,9 @@ void BACKUP_updateNewDevKey() {
 	sleep(3);
 }
 
-void BACKUP_updateAppKey() {
+void BACKUP_updateAppKey(char *db) {
 	string getAppKey = "SELECT DISTINCT AppKey from Device;";
-	BACKUP_OpenDB(getAppKey, infoAppKey);
+	BACKUP_OpenDB(db,getAppKey, infoAppKey);
 	BACKUP_appKeyDb.erase(BACKUP_appKeyDb.begin()+8, BACKUP_appKeyDb.begin()+9);
 	BACKUP_appKeyDb.erase(BACKUP_appKeyDb.begin()+12, BACKUP_appKeyDb.begin()+13);
 	BACKUP_appKeyDb.erase(BACKUP_appKeyDb.begin()+16, BACKUP_appKeyDb.begin()+17);
@@ -185,10 +185,10 @@ void BACKUP_updateAppKey() {
 	sleep(3);
 }
 
-void BACKUP_gw() {
+void BACKUP_gw(char *db) {
 	string getInfoGw = "SELECT DeviceUnicastId,DeviceKey FROM Device WHERE CategoryId = 0 AND DeviceId IS NOT NULL AND DeviceUnicastId IS NOT NULL AND DeviceKey IS NOT NULL;";
 	BACKUP_countGw = 0;
-	BACKUP_OpenDB(getInfoGw,inforGw);
+	BACKUP_OpenDB(db, getInfoGw,inforGw);
 	if(BACKUP_countGw){
 		BACKUP_infoGw.devKey.erase(BACKUP_infoGw.devKey.begin()+8, BACKUP_infoGw.devKey.begin()+9);
 		BACKUP_infoGw.devKey.erase(BACKUP_infoGw.devKey.begin()+12, BACKUP_infoGw.devKey.begin()+13);
@@ -215,10 +215,10 @@ void BACKUP_gw() {
 	}
 }
 
-void BACKUP_dev() {
+void BACKUP_dev(char *db) {
 	string getInfoDev = "SELECT DeviceUnicastId,DeviceKey FROM Device WHERE CategoryId != 0 AND DeviceId IS NOT NULL AND DeviceUnicastId IS NOT NULL AND DeviceKey IS NOT NULL;";
 	BACKUP_countDev = 0;
-	BACKUP_OpenDB(getInfoDev,inforDev);
+	BACKUP_OpenDB(db,getInfoDev,inforDev);
 	if(BACKUP_countDev > 0) {
 		for(int i=0; i < BACKUP_countDev; i++) {
 			BACKUP_listDev[i].devKey.erase(BACKUP_listDev[i].devKey.begin() + 8, BACKUP_listDev[i].devKey.begin() + 9);
@@ -265,16 +265,16 @@ void BACKUP_DeviceUnicastIdMax(){
 	bufferDataUart.push_back(AssignData(BACKUP_deviceUnicastId, 28));
 }
 
-void BACKUP_callback() {
+void BACKUP_callback(char * dir) {
 	bufferDataUart.push_back(AssignData(BACKUP_resetGw, 3));
 	sleep(8);
 	bufferDataUart.push_back(AssignData(BACKUP_getInfoGw, 4));
 	bufferDataUart.push_back(AssignData(BACKUP_getPro, 3));
-	BACKUP_gw();
-	BACKUP_dev();
-	BACKUP_updateNetKey();
+	BACKUP_gw(dir);
+	BACKUP_dev(dir);
+	BACKUP_updateNetKey(dir);
 	BACKUP_updateNewDevKey();
-	BACKUP_updateAppKey();
+	BACKUP_updateAppKey(dir);
 	BACKUP_DeviceUnicastIdMax();
 }
 

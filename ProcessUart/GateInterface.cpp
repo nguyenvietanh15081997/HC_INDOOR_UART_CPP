@@ -122,8 +122,22 @@ static void LogDataUart(bool hasRsp, uint8_t length, void *data){
 
 static uint64_t t1, t2, t3, t4;
 static uint64_t waitCmd, waitUpdate;
+static bool pir_available = false;
+static uint16_t adrPir = 0;
 static void GWIF_WriteMessage(void) {
 	if (pthread_mutex_trylock(&vrpth_SendUart)==0){
+		if (pir_available && (adrPir != 0)) {
+			pir_available = false;
+			for (int g = 0; g < MAX_PIR; g++) {
+				if ((CmdPir[g].length != 0) && (CmdPir[g].dataUart.adr_dst[0] | (CmdPir[g].dataUart.adr_dst[1] << 8)) == adrPir) {
+					write(serial_port, ToChar(CmdPir[g].dataUart), CmdPir[g].length);
+					tcdrain(serial_port);
+					LogDataUart(0, CmdPir[g].length, (void*) &CmdPir[g].dataUart.HCI_CMD_GATEWAY[0]);
+					CmdPir[g].length = 0;
+					break;
+				}
+			}
+		}
 		if (bufferDataUart.size()) {
 			uartSendDev_t data = bufferDataUart.front();
 			t1 = getMillisOfDay();
@@ -320,7 +334,7 @@ typedef struct processRspVendor{
 	cb_rsp_function_t 	rspFuncVendorProcess;
 } proccessRspVendor_t;
 
-#define MAX_FUNCTIONVENDOR_RSP			42
+#define MAX_FUNCTIONVENDOR_RSP			45
 proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_TYPE_ASK,						RspTypeDevice},
 		{HEADER_TYPE_SET,						RspTypeDevice},
@@ -355,6 +369,11 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{SWITCH_4_SCENE_SET,					Rsp_Switch_Scene_Set},
 		{SWITCH_4_SCENE_DEL,					Rsp_Switch_Scene_Del},
 		{SWITCH_4_STATUS,						Rsp_Switch_RequestStatus},
+
+		{SWITCH_CONTROL_HSL, 					Rsp_Switch_ControlRGB},
+		{SWITCH_CONTROL_COMBINE, 				Rsp_Switch_Control_Combine},
+		{SWITCH_TIMER,							Rsp_Switch_Timer},
+
 		{ST_HEADER_ADD_SCENE,					RspScreenTouchAddScene},
 		{ST_HEADER_DEL_SCENE,					RspScreenTouchDelScene},
 		{ST_HEADER_DELALL_SCENE,				RspScreenTouchDelAllScene},
@@ -378,11 +397,11 @@ static int GWIF_ProcessData (void)
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
 		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
-			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
-					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
-					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
+//			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
+//					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
+//					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
 				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
-			}
+//			}
 		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \
@@ -390,6 +409,7 @@ static int GWIF_ProcessData (void)
 			{
 				for (int i = 0; i < 6; i++) {
 					OUTMESSAGE_MACSelect[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 1];
+					plaintext[i+8] = vrts_GWIF_IncomeMessage->Message[i+1];
 				}
 				sprintf((char *)PRO_mac, "%02x:%02x:%02x:%02x:%02x:%02x",
 						vrts_GWIF_IncomeMessage->Message[1],vrts_GWIF_IncomeMessage->Message[2],
@@ -487,6 +507,7 @@ static int GWIF_ProcessData (void)
 						uint16_t headVendor = vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8);
 						if (headVendor == HEADER_TYPE_SAVEGW) {
 							stateProvision = statePro_setType;
+//							stateProvision = statePro_scan;
 							RspSaveGw(vrts_GWIF_IncomeMessage);
 						}
 						else if((headVendor == HEADER_TYPE_SET) || (headVendor == HEADER_TYPE_ASK)){
@@ -515,6 +536,10 @@ static int GWIF_ProcessData (void)
 				uint16_t headerVendor = vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8);
 				if (opcodeVendor == SENSOR_TYPE) {
 					uint16_t header = vrts_GWIF_IncomeMessage->Message[6] | (vrts_GWIF_IncomeMessage->Message[7] << 8);
+					if (header == 0x0001) {
+						pir_available = true;
+						adrPir = (vrts_GWIF_IncomeMessage->Message[1] | vrts_GWIF_IncomeMessage->Message[2] << 8);
+					}
 					for (int i = 0; i < MAX_FUNCTION0x52_RSP; i++) {
 						if (header == listRspFunction0x52[i].header) {
 							listRspFunction0x52[i].rspFuncProcess0x52(vrts_GWIF_IncomeMessage);
