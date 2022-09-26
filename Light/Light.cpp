@@ -53,43 +53,44 @@ void RspOnoff(TS_GWIF_IncomingData *data) {
 		onoffStatus = data->Message[8];
 	}
 
-	if (vrte_TypeCmd == typeCmd_Control){
-		StringBuffer dataMqtt;
-		Writer<StringBuffer> json(dataMqtt);
+//	if (vrte_TypeCmd == typeCmd_Control){
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("ONOFF");
+		json.Key("DATA");
 		json.StartObject();
-			json.Key("CMD");json.String("ONOFF");
-			json.Key("DATA");
-			json.StartObject();
-				json.Key("DEVICE_UNICAST_ID");json.Int(adr);
-				json.Key("VALUE_ONOFF");json.Int(onoffStatus);
-			json.EndObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("VALUE_ONOFF");json.Int(onoffStatus);
 		json.EndObject();
+	json.EndObject();
 
-		string s = dataMqtt.GetString();
-		slog_info("<mqtt>send: %s", s.c_str());
-		Data2BufferSendMqtt(s);
-	} else if (vrte_TypeCmd == typeCmd_Update){
-		StringBuffer dataMqtt1;
-		Writer<StringBuffer> json1(dataMqtt1);
-		json1.StartObject();
-			json1.Key("CMD");json1.String("UPDATE");
-			json1.Key("DATA");
-			json1.StartObject();
-				json1.Key("DEVICE_UNICAST_ID");json1.Int(adr);
-				json1.Key("PROPERTIES");
-				json1.StartArray();
-					json1.StartObject();
-						json1.Key("ID");json1.Int(PROPERTY_ONOFF);
-						json1.Key("VALUE");json1.Int(onoffStatus);
-					json1.EndObject();
-				json1.EndArray();
-			json1.EndObject();
-		json1.EndObject();
-
-		string s1 = dataMqtt1.GetString();
-//		slog_info("<mqtt>send: %s", s1.c_str());
-		Data2BufferSendMqtt(s1);
-	}
+	string s = dataMqtt.GetString();
+	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s);
+//	} else if (vrte_TypeCmd == typeCmd_Update){
+//		vrte_TypeCmd = typeCmd_Control;
+//		StringBuffer dataMqtt1;
+//		Writer<StringBuffer> json1(dataMqtt1);
+//		json1.StartObject();
+//			json1.Key("CMD");json1.String("UPDATE");
+//			json1.Key("DATA");
+//			json1.StartObject();
+//				json1.Key("DEVICE_UNICAST_ID");json1.Int(adr);
+//				json1.Key("PROPERTIES");
+//				json1.StartArray();
+//					json1.StartObject();
+//						json1.Key("ID");json1.Int(PROPERTY_ONOFF);
+//						json1.Key("VALUE");json1.Int(onoffStatus);
+//					json1.EndObject();
+//				json1.EndArray();
+//			json1.EndObject();
+//		json1.EndObject();
+//
+//		string s1 = dataMqtt1.GetString();
+////		slog_info("<mqtt>send: %s", s1.c_str());
+//		Data2BufferSendMqtt(s1);
+//	}
 }
 
 void RspCCT(TS_GWIF_IncomingData *data) {
@@ -237,6 +238,7 @@ void RspHSL(TS_GWIF_IncomingData *data) {
 void RspAddDelGroup(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	uint16_t groupId = data->Message[10] | (data->Message[11] << 8);
+	uint16_t element = data->Message[8] | (data->Message[9] << 8);
 	string cmd = "";
 	if (gvrb_AddGroupLight) {
 		cmd = "ADDGROUP";
@@ -250,7 +252,9 @@ void RspAddDelGroup(TS_GWIF_IncomingData *data) {
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("ELEMENT_UNICAST_ID"); json.Int(element);
 			json.Key("GROUP_UNICAST_ID");json.Int(groupId);
+
 		json.EndObject();
 	json.EndObject();
 
@@ -417,7 +421,7 @@ void RspSaveGw(TS_GWIF_IncomingData *data){
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();
-		json.Key("CMD");json.String("SAVEGATEWAY");
+		json.Key("CMD");json.String("SAVE_GW");
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);

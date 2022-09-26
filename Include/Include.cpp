@@ -8,7 +8,8 @@
 #include "Include.hpp"
 
 using namespace std;
-uartSendDev_t CmdPir[MAX_PIR] = {0,0,0};
+
+vector<bufPir_t> 		vt_Pir;
 deque<uartSendDev_t> 	bufferDataUart;
 deque<uartSendDev_t>    bufferUartUpdate;
 deque<string> 			bufferSendMqtt;
@@ -37,12 +38,6 @@ uartSendDev_t AssignData(uint8_t *data,int length){
 	dataSendUart.length = length;
 	memcpy((uint8_t *)(&dataSendUart.dataUart.HCI_CMD_GATEWAY[0]), data, length);
 	dataSendUart.timeWait = 10;
-#if 0
-	for (int i = 0; i < length; i++) {
-		printf("%x ", data[i]);
-	}
-	printf("\n");
-#endif
 	return dataSendUart;
 }
 
@@ -52,13 +47,42 @@ void Data2BufferSendMqtt(string s) {
 	pthread_mutex_unlock(&vrpth_SendMqtt);
 }
 
-int Push2BufPirCmd(uartSendDev_t data){
-	for(int i = 0; i < MAX_PIR; i++){
-		if(CmdPir[i].length == 0) {
-			CmdPir[i] = data;
-			return 1;
+bool DelItemForBufPirCmd(bufPir_t data){
+	vector<bufPir_t>::iterator iter_name;
+	for (iter_name = vt_Pir.begin(); iter_name != vt_Pir.end(); iter_name++)
+	{
+		if (iter_name->adr == data.adr &&
+				iter_name->idScene == data.idScene &&
+				iter_name->type == data.type){
+			vt_Pir.erase(iter_name);
+			return true;
 		}
 	}
-	return 0;
+	return false;
 }
+
+bufPir_t FindBufPir(uint16_t adr)
+{
+	bufPir_t temp;
+	vector<bufPir_t>::iterator iter_name;
+	for (iter_name = vt_Pir.begin(); iter_name != vt_Pir.end(); iter_name++)
+	{
+		if (iter_name->adr == adr){
+			temp.adr = iter_name->adr;
+			temp.data = iter_name->data;
+			temp.idScene = iter_name->idScene;
+			temp.type = iter_name->type;
+			return temp;
+		}
+	}
+	return temp;
+}
+
+void Push2BufSendUart(uartSendDev_t vrts_DataUartSend)
+{
+	while (pthread_mutex_trylock(&vrpth_SendUart) != 0){};
+	bufferDataUart.push_back(vrts_DataUartSend);
+	pthread_mutex_unlock(&vrpth_SendUart);
+}
+
 

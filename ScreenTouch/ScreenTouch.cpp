@@ -543,15 +543,15 @@ void RspScreenTouchAdjust(TS_GWIF_IncomingData * data){
 				} else if(typeAdjust == ST_ADJUST_HSL){
 					json.StartObject();
 					json.Key("ID"); json.Int(PROPERTY_H);
-					json.Key("VALUE"); json.Int(data->Message[11] | (data->Message[12] << 8));
+					json.Key("VALUE"); json.Int((data->Message[11] << 8) | (data->Message[12]));
 					json.EndObject();
 					json.StartObject();
 					json.Key("ID"); json.Int(PROPERTY_S);
-					json.Key("VALUE"); json.Int(data->Message[13] | (data->Message[14] << 8));
+					json.Key("VALUE"); json.Int((data->Message[13] << 8) | (data->Message[14]));
 					json.EndObject();
 					json.StartObject();
 					json.Key("ID"); json.Int(PROPERTY_L);
-					json.Key("VALUE"); json.Int(data->Message[15] | (data->Message[16] << 8));
+					json.Key("VALUE"); json.Int((data->Message[15] << 8) | (data->Message[16]));
 					json.EndObject();
 				}
 			json.EndArray();

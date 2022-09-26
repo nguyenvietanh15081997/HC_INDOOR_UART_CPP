@@ -63,26 +63,26 @@ static void CmdCCT_Set(uint16_t uniAdrSetCCT, uint16_t valueCCT,
 	vrts_CMD_STRUCTURE.para[6] = (transition >> 8) & 0xFF;
 }
 
-static void CmdAddGroup(uint16_t uniAdrAddGroup, uint16_t adrGroup) {
+static void CmdAddGroup(uint16_t uniAdrAddGroup, uint16_t adrGroup, uint16_t element) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrAddGroup & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (uniAdrAddGroup >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = CFG_MODEL_SUB_ADD & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (CFG_MODEL_SUB_ADD >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = uniAdrAddGroup & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = (uniAdrAddGroup >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = element & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = (element >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[2] = adrGroup & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = (adrGroup >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = 0x00;
 	vrts_CMD_STRUCTURE.para[5] = 0x10;
 }
 
-static void CmdDelGroup(uint16_t uniAdrAddGroup, uint16_t adrGroup) {
+static void CmdDelGroup(uint16_t uniAdrAddGroup, uint16_t adrGroup, uint16_t element) {
 	vrts_CMD_STRUCTURE.adr_dst[0] = uniAdrAddGroup & 0xFF;
 	vrts_CMD_STRUCTURE.adr_dst[1] = (uniAdrAddGroup >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[0] = CFG_MODEL_SUB_DEL & 0xFF;
 	vrts_CMD_STRUCTURE.opCode[1] = (CFG_MODEL_SUB_DEL >> 8) & 0xFF;
-	vrts_CMD_STRUCTURE.para[0] = uniAdrAddGroup & 0xFF;
-	vrts_CMD_STRUCTURE.para[1] = (uniAdrAddGroup >> 8) & 0xFF;
+	vrts_CMD_STRUCTURE.para[0] = element & 0xFF;
+	vrts_CMD_STRUCTURE.para[1] = (element >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[2] = adrGroup & 0xFF;
 	vrts_CMD_STRUCTURE.para[3] = (adrGroup >> 8) & 0xFF;
 	vrts_CMD_STRUCTURE.para[4] = 0x00;
@@ -320,12 +320,11 @@ void CmdUpdateLight(uint16_t cmd, uint16_t adr) {
 	vrts_UartUpdate.length = 18;
 	vrts_UartUpdate.dataUart = vrts_CMD_STRUCTURE;
 	vrts_UartUpdate.timeWait = TIMEWAIT_UPDATE;
-	if (pthread_mutex_trylock(&vrpth_SendUart) == 0) {
-		if (!gvrb_Provision) {
-			bufferUartUpdate.push_back(vrts_UartUpdate);
-		}
-		pthread_mutex_unlock(&vrpth_SendUart);
+	while (pthread_mutex_trylock(&vrpth_SendUart) != 0) {};
+	if (!gvrb_Provision) {
+		bufferUartUpdate.push_back(vrts_UartUpdate);
 	}
+	pthread_mutex_unlock(&vrpth_SendUart);
 }
 void CmdUpdateLight_Old(typeUpdate type, uint16_t cmd, uint16_t adr, uint16_t cmdLength) {
 	vrts_CMD_STRUCTURE.HCI_CMD_GATEWAY[0] = cmd & 0xFF;
@@ -377,13 +376,13 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	}
 	else if(Func == AddGroup_typedef){
 		gvrb_AddGroupLight = true;
-		CmdAddGroup(unicastAdr, adrGroup);
+		CmdAddGroup(unicastAdr, adrGroup,parLightness);
 		timeWait = TIMECONFIGROOM;
 		vrts_CMD_STRUCTURE.retry_cnt = 0;
 	}
 	else if(Func == DelGroup_typedef){
 		gvrb_AddGroupLight = false;
-		CmdDelGroup(unicastAdr, adrGroup);
+		CmdDelGroup(unicastAdr, adrGroup, parLightness);
 		timeWait = TIMECONFIGROOM;
 		vrts_CMD_STRUCTURE.retry_cnt = 0;
 	}
@@ -1147,12 +1146,29 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 	vrts_DataUartSend.dataUart = vrts_CMD_STRUCTURE;
 	vrts_DataUartSend.timeWait = timeWait;
 	while (pthread_mutex_trylock(&vrpth_SendUart) != 0) {};
-	if (Func_vendor == SetTimeAction_vendor_typedef
-			|| Func_vendor == SceneForSensor_LightPir_vendor_typedef
-			|| Func_vendor == DelSceneForSensor_LightPir_vendor_typedef
-			|| Func_vendor == SceneForSensor_Pir_vendor_typedef
-			|| Func_vendor == DelSceneForSensor_Pir_vendor_typedef) {
-		Push2BufPirCmd(vrts_DataUartSend);
+	if (Func_vendor == SetTimeAction_vendor_typedef) {
+		bufPir_t pirCmdSetTime;
+		pirCmdSetTime.adr = adr;
+		pirCmdSetTime.data = vrts_DataUartSend;
+		pirCmdSetTime.idScene = condition_lightness;
+		pirCmdSetTime.type = typeCfgPir_setTimeAction;
+		vt_Pir.push_back(pirCmdSetTime);
+	} else if (Func_vendor == SceneForSensor_Pir_vendor_typedef
+			|| Func_vendor == SceneForSensor_LightPir_vendor_typedef){
+		bufPir_t pirCmdSetScene;
+		pirCmdSetScene.adr = adr;
+		pirCmdSetScene.data = vrts_DataUartSend;
+		pirCmdSetScene.idScene = sceneID;
+		pirCmdSetScene.type = typeCfgPir_addScene;
+		vt_Pir.push_back(pirCmdSetScene);
+	} else if (Func_vendor == DelSceneForSensor_Pir_vendor_typedef
+			|| Func_vendor == DelSceneForSensor_LightPir_vendor_typedef){
+		bufPir_t pirCmdDelScene;
+		pirCmdDelScene.adr = adr;
+		pirCmdDelScene.data = vrts_DataUartSend;
+		pirCmdDelScene.idScene = sceneID;
+		pirCmdDelScene.type = typeCfgPir_delScene;
+		vt_Pir.push_back(pirCmdDelScene);
 	} else {
 		bufferDataUart.push_back(vrts_DataUartSend);
 	}

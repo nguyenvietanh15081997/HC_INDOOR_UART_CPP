@@ -157,11 +157,22 @@ static void Update(char *msg) {
 						typeDev = device["TYPE_DV"].GetInt();
 						if (typeDev == CONG_TAC_REM){
 							CURTAIN_Cmd(enum_curtain_status_request, adr, NULL8, NULL8, NULL16);
+						} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF){
+							CmdUpdateLight_Old(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
 						} else if (typeDev == CONG_TAC_CAM_UNG_RD_CT01
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT02
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT03
 								|| typeDev == CONG_TAC_CAM_UNG_RD_CT04
-								|| typeDev == CONG_TAC_BINH_NONG_LANH) {
+								|| typeDev == CONG_TAC_BINH_NONG_LANH
+								|| typeDev == SWITCH_RGB_4_TYPE
+								|| typeDev == SWITCH_RGB_3_TYPE
+								|| typeDev == SWITCH_RGB_2_TYPE
+								|| typeDev == SWITCH_RGB_1_TYPE
+								|| typeDev == BLN_RGB_TYPE
+								|| typeDev == CONG_TAC_CO_1_TYPE
+								|| typeDev == CONG_TAC_CO_2_TYPE
+								|| typeDev == CONG_TAC_CO_3_TYPE
+								|| typeDev == CONG_TAC_CO_4_TYPE ) {
 							Switch_Send_Uart(switch_enum_status, typeDev, adr,
 									NULL8, NULL8, NULL8, NULL8, NULL8, NULL8,
 									NULL16, 0, 0, 0, 0);
@@ -199,8 +210,6 @@ static void Update(char *msg) {
 											|| typeDev == LED_DOWNLIGHT_RGB) {
 										CmdUpdateLight_Old(update_DIM_CCT, HCI_CMD_GATEWAY_CMD, adr, 12);
 										CmdUpdateLight_Old(update_HSL, HCI_CMD_GATEWAY_CMD, adr, 12);
-										CmdUpdateLight_Old(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
-									} else if (typeDev == CONG_TAC_CHUYEN_MACH_ONOFF) {
 										CmdUpdateLight_Old(update_OnOff, HCI_CMD_GATEWAY_CMD, adr, 12);
 									}
 								}
@@ -413,22 +422,24 @@ static void AddGroup(char *msg) {
 	document.Parse(msg);
 	uint16_t groupId;
 	uint16_t adr;
+	uint16_t elem;
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("GROUP_UNICAST_ID")) {
+			if (data.HasMember("GROUP_UNICAST_ID")
+					&& data["GROUP_UNICAST_ID"].IsInt()
+					&& data.HasMember("DEVICE_UNICAST_ID")
+					&& data["DEVICE_UNICAST_ID"].IsInt()) {
 				groupId = data["GROUP_UNICAST_ID"].GetInt();
-			}
-			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
-				const Value &temp = data["DEVICE_UNICAST_ID"];
-				for (SizeType i = 0; i < temp.Size(); i++) {
-					adr = temp[i].GetInt();
-					if (groupId >= GROUPID_START) {
-						FunctionPer(HCI_CMD_GATEWAY_CMD, AddGroup_typedef, adr,
-								groupId, NULL8, NULL16, NULL16, NULL16,
-								NULL16, NULL16, NULL16, NULL16, NULL16, 18);
-					}
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				if (data.HasMember("ELEMENT_UNICAST_ID") && data["ELEMENT_UNICAST_ID"].IsInt()){
+					elem = data["ELEMENT_UNICAST_ID"].GetInt();
+				} else {
+					elem = adr;
 				}
+				FunctionPer(HCI_CMD_GATEWAY_CMD, AddGroup_typedef, adr,
+						groupId, NULL8, elem, NULL16, NULL16,
+						NULL16, NULL16, NULL16, NULL16, NULL16, 18);
 			}
 		}
 	}
@@ -440,23 +451,24 @@ static void DelGroup(char *msg) {
 	document.Parse(msg);
 	uint16_t groupId;
 	uint16_t adr;
+	uint16_t elem;
 	if (document.IsObject()) {
 		if (document.HasMember("DATA")) {
 			const Value &data = document["DATA"];
-			if (data.HasMember("GROUP_UNICAST_ID")) {
+			if (data.HasMember("GROUP_UNICAST_ID")
+					&& data["GROUP_UNICAST_ID"].IsInt()
+					&& data.HasMember("DEVICE_UNICAST_ID")
+					&& data["DEVICE_UNICAST_ID"].IsInt()) {
 				groupId = data["GROUP_UNICAST_ID"].GetInt();
-			}
-			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsArray()) {
-				const Value &temp = data["DEVICE_UNICAST_ID"];
-				for (SizeType i = 0; i < temp.Size(); i++) {
-					adr = temp[i].GetInt();
-					if (groupId >= GROUPID_START) {
-						FunctionPer(HCI_CMD_GATEWAY_CMD, DelGroup_typedef, adr,
-								groupId, NULL8, NULL16, NULL16, NULL16,
-								NULL16, NULL16, NULL16, NULL16, NULL16, 18);
-
-					}
+				adr = data["DEVICE_UNICAST_ID"].GetInt();
+				if (data.HasMember("ELEMENT_UNICAST_ID") && data["ELEMENT_UNICAST_ID"].IsInt()){
+					elem = data["ELEMENT_UNICAST_ID"].GetInt();
+				} else {
+					elem = adr;
 				}
+				FunctionPer(HCI_CMD_GATEWAY_CMD, DelGroup_typedef, adr,
+						groupId, NULL8, elem, NULL16, NULL16,
+						NULL16, NULL16, NULL16, NULL16, NULL16, 18);
 			}
 		}
 	}
@@ -1612,13 +1624,15 @@ static void ControlCombineSwitch(char * msg) {
 	Document document;
 	document.Parse(msg);
 	if (document.IsObject()){
-		if (document.HasMember("DATA") && document["DATA"].IsObject()){
+		if (document.HasMember("DATA") && document["DATA"].IsObject() &&
+				document.HasMember("TYPE") && document["TYPE"].IsInt()){
 			const Value& data = document["DATA"];
-			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()
-					&& data.HasMember("ID") && data["ID"].IsInt()){
+			uint16_t type = document["TYPE"].GetInt();
+			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt() &&
+					data.HasMember("ID") && data["ID"].IsInt() ){
 				uint16_t adr = data["DEVICE_UNICAST_ID"].GetInt();
 				uint16_t id  = data["ID"].GetInt();
-				Switch_Send_Uart(switch_enum_control_combine, NULL16, adr,
+				Switch_Send_Uart(switch_enum_control_combine, type, adr,
 						NULL8, NULL8, NULL8, NULL8, NULL8, NULL8, id, NULL16,
 						NULL16, NULL16, NULL16);
 			}
@@ -1630,8 +1644,9 @@ static void TimerSwitch(char * msg) {
 	Document document;
 	document.Parse(msg);
 	if (document.IsObject()){
-		if (document.HasMember("DATA") && document["DATA"].IsObject()){
+		if (document.HasMember("DATA") && document["DATA"].IsObject() && document.HasMember("TYPE") && document["TYPE"].IsInt()){
 			const Value& data = document["DATA"];
+			uint16_t type = document["TYPE"].GetInt();
 			if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()
 					&& data.HasMember("STATUS") && data["STATUS"].IsInt()
 					&& data.HasMember("TIME") && data["TIME"].IsInt64()){
@@ -1639,7 +1654,7 @@ static void TimerSwitch(char * msg) {
 				uint8_t sts = data["STATUS"].GetInt();
 				uint64_t time = data["TIME"].GetInt64();
 
-				Switch_Send_Uart(switch_enum_timer, NULL16, adr, sts, NULL8,
+				Switch_Send_Uart(switch_enum_timer, type, adr, sts, NULL8,
 						NULL8, NULL8, NULL8, NULL8, NULL16, NULL16, NULL16,
 						NULL16, (uint32_t)time);
 			}
@@ -1651,74 +1666,115 @@ static void DeviceControl(char *msg){
 	uint16_t adr = 0;
 	int id = -1;
 	int val = -1;
+	int type_dev;
 	Document document;
 	document.Parse(msg);
 	if(document.HasMember("DATA") && document["DATA"].IsObject()){
+		if (document.HasMember("TYPE_DEV") && document["TYPE_DEV"].IsInt()){
+			type_dev = document["TYPE_DEV"].GetInt();
+		}
 		const Value& data = document["DATA"];
 		if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()){
 			adr = data["DEVICE_UNICAST_ID"].GetInt();
-			if (data.HasMember("TYPE_DEV") && data["TYPE_DEV"].IsInt()){
-				int type_dev = data["TYPE_DEV"].GetInt();
-				if (type_dev == CONG_TAC_REM){
-					if(data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
-						const Value& properties = data["PROPERTIES"];
-						for(SizeType i =0; i< properties.Size(); i++){
-							const Value& property = properties[i];
-							if (property.HasMember("ID") && property["ID"].IsInt()){
-								id = property["ID"].GetInt();
-								if (id == REM_DUNG){
-									CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_PAUSE, NULL8, NULL16);
-								} else if (id == REM_MO) {
-									CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN, NULL8, NULL16);
-								} else if (id == REM_DONG) {
-									CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_CLOSE, NULL8, NULL16);
-								}
-								if (property.HasMember("VALUE") && property["VALUE"].IsInt()) {
-									val = property["VALUE"].GetInt();
-									if (id == REM_PHANTRAM_MO){
-										CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN_PERCENT, val, NULL16);
-									} else if (id == REM_CONFIG_MOTOR){
-										CURTAIN_Cmd(enum_curtain_config_motor, adr, val, NULL8, NULL16);
-									}
+			if (type_dev == CONG_TAC_REM){
+				if(data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
+					const Value& properties = data["PROPERTIES"];
+					for(SizeType i =0; i< properties.Size(); i++){
+						const Value& property = properties[i];
+						if (property.HasMember("ID") && property["ID"].IsInt()){
+							id = property["ID"].GetInt();
+							if (id == REM_DUNG){
+								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_PAUSE, NULL8, NULL16);
+							} else if (id == REM_MO) {
+								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN, NULL8, NULL16);
+							} else if (id == REM_DONG) {
+								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_CLOSE, NULL8, NULL16);
+							}
+							if (property.HasMember("VALUE") && property["VALUE"].IsInt()) {
+								val = property["VALUE"].GetInt();
+								if (id == REM_PHANTRAM_MO){
+									CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN_PERCENT, val, NULL16);
+								} else if (id == REM_CONFIG_MOTOR){
+									CURTAIN_Cmd(enum_curtain_config_motor, adr, val, NULL8, NULL16);
 								}
 							}
 						}
 					}
-				} else if (type_dev == CONG_TAC_RGB_CT1
-						|| type_dev == CONG_TAC_RGB_CT2
-						|| type_dev == CONG_TAC_RGB_CT3
-						|| type_dev == CONG_TAC_RGB_CT4
-						|| type_dev == CONG_TAC_RGB_BINH_NONG_LANH) {
-					if (data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
-						const Value& properties = data["PROPERTIES"];
-						bool hasH = false;
-						bool hasL = false;
-						bool hasS = false;
-						uint16_t h,s,l;
-						for(SizeType i =0; i< properties.Size(); i++){
-							const Value& property = properties[i];
-							if (property.HasMember("ID") && property["ID"].IsInt() && property.HasMember("VALUE") && property["VALUE"].IsInt()){
-								id = property["ID"].GetInt();
-								if (id == PROPERTY_H){
-									h =  property["VALUE"].GetInt();
-									hasH = true;
-								} else if (id == PROPERTY_S) {
-									s = property["VALUE"].GetInt();
-									hasS = true;
-								} else if (id == PROPERTY_L) {
-									l = property["VALUE"].GetInt();
-									hasL = true;
-								}
+				}
+			} else if (type_dev == CONG_TAC_RGB_CT1
+					|| type_dev == CONG_TAC_RGB_CT2
+					|| type_dev == CONG_TAC_RGB_CT3
+					|| type_dev == CONG_TAC_RGB_CT4
+					|| type_dev == CONG_TAC_RGB_BINH_NONG_LANH
+					|| type_dev == DIEU_KHIEN_CANH_RGB_AC
+					|| type_dev == CONG_TAC_CO_1_TYPE
+					|| type_dev == CONG_TAC_CO_2_TYPE
+					|| type_dev == CONG_TAC_CO_3_TYPE
+					|| type_dev == CONG_TAC_CO_4_TYPE) {
+				if (data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
+					const Value& properties = data["PROPERTIES"];
+					bool hasR = false;
+					bool hasG = false;
+					bool hasB = false;
+					bool onoffAll = false;
+					uint8_t valueOnoff;
+					bool btnAll = false;
+					uint8_t listBtnPro[6] = {11,12,13,14,15,16};
+					uint16_t r,g,b;
+					uint8_t dimOn, dimOff;
+					uint16_t btn;
+					for(SizeType i =0; i< properties.Size(); i++){
+						const Value& property = properties[i];
+						if (property.HasMember("ID") && property["ID"].IsInt() && property.HasMember("VALUE") && property["VALUE"].IsInt()){
+							id = property["ID"].GetInt();
+							if (id == PROPERTY_R){
+								r =  property["VALUE"].GetInt();
+								hasR = true;
+							} else if (id == PROPERTY_G) {
+								g = property["VALUE"].GetInt();
+								hasG = true;
+							} else if (id == PROPERTY_B) {
+								b = property["VALUE"].GetInt();
+								hasB = true;
+							} else if (id == PROPERTY_DIMON) {
+								dimOn = property["VALUE"].GetInt();
+							} else if (id == PROPERTY_DIMOFF) {
+								dimOff = property["VALUE"].GetInt();
+							} else if (id == listBtnPro[0]) {
+								btn = 1;
+							} else if (id == listBtnPro[1]) {
+								btn = 2;
+							} else if (id == listBtnPro[2]) {
+								btn = 3;
+							} else if (id == listBtnPro[3]) {
+								btn = 4;
+							} else if (id == listBtnPro[4]) {
+								btn = 5;
+							} else if (id == listBtnPro[5]) {
+								btn = 6;
+							} else if (id == 65535) {
+								btn = 65535;
+								btnAll = true;
+							} else if (id == PROPERTY_ONOFF){
+								onoffAll = true;
+								valueOnoff = property["VALUE"].GetInt();
 							}
 						}
-						if (hasH && hasS && hasL){
-							Switch_Send_Uart(switch_enum_control_hsl, NULL16,
-									adr, NULL8, NULL8, NULL8, NULL8, NULL8,
-									NULL8, NULL16, h, s, l, NULL16);
-							hasH = false;
-							hasL = false;
-							hasS = false;
-						}
+					}
+					if (hasR && hasG && hasB){
+						cout << r << ":" << g << ":" << b << endl;
+						Switch_Send_Uart(switch_enum_control_hsl, type_dev,
+								adr, btn, NULL8, dimOn, dimOff, NULL8,
+								NULL8, NULL16, r, g, b, NULL16);
+						hasR = false;
+						hasG = false;
+						hasB = false;
+					}
+					if (btnAll && onoffAll) {
+						btnAll = false;
+						onoffAll = false;
+						Switch_Send_Uart(switch_enum_control, type_dev, adr, btn,
+								valueOnoff, NULL8, NULL8, NULL8, NULL8, NULL16, 0, 0, 0, 0);
 					}
 				}
 			}

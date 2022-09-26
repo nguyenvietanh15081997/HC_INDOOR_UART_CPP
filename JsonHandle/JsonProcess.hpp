@@ -42,6 +42,8 @@
 
 #define DIEU_KHIEN_CANH_M2(DC)			23001
 #define DIEU_KHIEN_CANH_AC				23002
+#define DIEU_KHIEN_CANH_RGB_AC			23006
+
 
 #define REM_MO							54
 #define REM_DONG						55

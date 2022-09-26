@@ -335,7 +335,7 @@ void RspPir_LightAddScene(TS_GWIF_IncomingData *data){
 void RspPir_LightDelScene(TS_GWIF_IncomingData *data) {
 	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
 	pirsensorRsp_t vrts_PirRsp;
-	vrts_PirRsp.sceneId = data->Message[10];
+	vrts_PirRsp.sceneId = data->Message[10] | (data->Message[11] << 8);
 	StringBuffer dataMqtt;
 	Writer<StringBuffer> json(dataMqtt);
 	json.StartObject();

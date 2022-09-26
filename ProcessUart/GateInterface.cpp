@@ -122,20 +122,22 @@ static void LogDataUart(bool hasRsp, uint8_t length, void *data){
 
 static uint64_t t1, t2, t3, t4;
 static uint64_t waitCmd, waitUpdate;
-static bool pir_available = false;
-static uint16_t adrPir = 0;
+
+typedef struct checkPir{
+	bool available;
+	uint16_t adr;
+}checkPir_t;
+checkPir_t vrtsCheckPir;
+
 static void GWIF_WriteMessage(void) {
 	if (pthread_mutex_trylock(&vrpth_SendUart)==0){
-		if (pir_available && (adrPir != 0)) {
-			pir_available = false;
-			for (int g = 0; g < MAX_PIR; g++) {
-				if ((CmdPir[g].length != 0) && (CmdPir[g].dataUart.adr_dst[0] | (CmdPir[g].dataUart.adr_dst[1] << 8)) == adrPir) {
-					write(serial_port, ToChar(CmdPir[g].dataUart), CmdPir[g].length);
-					tcdrain(serial_port);
-					LogDataUart(0, CmdPir[g].length, (void*) &CmdPir[g].dataUart.HCI_CMD_GATEWAY[0]);
-					CmdPir[g].length = 0;
-					break;
-				}
+		if (vt_Pir.size() > 0){
+			if (vrtsCheckPir.available){
+				vrtsCheckPir.available = false;
+				bufPir temp = FindBufPir(vrtsCheckPir.adr);
+				write(serial_port, ToChar(temp.data.dataUart), temp.data.length);
+				tcdrain(serial_port);
+				LogDataUart(0, temp.data.length, (void*) &temp.data.dataUart.HCI_CMD_GATEWAY[0]);
 			}
 		}
 		if (bufferDataUart.size()) {
@@ -334,7 +336,7 @@ typedef struct processRspVendor{
 	cb_rsp_function_t 	rspFuncVendorProcess;
 } proccessRspVendor_t;
 
-#define MAX_FUNCTIONVENDOR_RSP			45
+#define MAX_FUNCTIONVENDOR_RSP			57
 proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_TYPE_ASK,						RspTypeDevice},
 		{HEADER_TYPE_SET,						RspTypeDevice},
@@ -348,6 +350,7 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{HEADER_SCENE_REMOTE_DC_DEL,			RspRemoteDelScene},
 		{HEADER_SCENE_REMOTE_AC_SET,			RspAddSceneRemote},
 		{HEADER_SCENE_REMOTE_AC_DEL,			RspRemoteDelScene},
+		{HEADER_CONTROL_RGB_AC, 				RspControlRGB},
 		{HEADER_SCENE_LIGHT_PIR_SET,			RspPir_LightAddScene},
 		{HEADER_SCENE_LIGHT_PIR_DEL,			RspPir_LightDelScene},
 		{HEADER_SCENE_PIR_SENSOR_TIMEACTION,	RspPirTimeAction},
@@ -369,10 +372,21 @@ proccessRspVendor_t listRspFunctionVendor[MAX_FUNCTIONVENDOR_RSP] = {
 		{SWITCH_4_SCENE_SET,					Rsp_Switch_Scene_Set},
 		{SWITCH_4_SCENE_DEL,					Rsp_Switch_Scene_Del},
 		{SWITCH_4_STATUS,						Rsp_Switch_RequestStatus},
+		{REQUEST_STATUS_DEV_RGB,				Rsp_RequestStatusRgb},
+		{UPDATE_STATUS_DEV_RGB,					Rsp_RequestStatusRgb},
 
-		{SWITCH_CONTROL_HSL, 					Rsp_Switch_ControlRGB},
-		{SWITCH_CONTROL_COMBINE, 				Rsp_Switch_Control_Combine},
-		{SWITCH_TIMER,							Rsp_Switch_Timer},
+		{SWITCH_1_CONTROL_HSL, 					Rsp_Switch_ControlRGB},
+		{SWITCH_1_CONTROL_COMBINE, 				Rsp_Switch_Control_Combine},
+		{SWITCH_1_TIMER,						Rsp_Switch_Timer},
+		{SWITCH_2_CONTROL_HSL, 					Rsp_Switch_ControlRGB},
+		{SWITCH_2_CONTROL_COMBINE, 				Rsp_Switch_Control_Combine},
+		{SWITCH_2_TIMER,						Rsp_Switch_Timer},
+		{SWITCH_3_CONTROL_HSL, 					Rsp_Switch_ControlRGB},
+		{SWITCH_3_CONTROL_COMBINE, 				Rsp_Switch_Control_Combine},
+		{SWITCH_3_TIMER,						Rsp_Switch_Timer},
+		{SWITCH_4_CONTROL_HSL, 					Rsp_Switch_ControlRGB},
+		{SWITCH_4_CONTROL_COMBINE, 				Rsp_Switch_Control_Combine},
+		{SWITCH_4_TIMER,						Rsp_Switch_Timer},
 
 		{ST_HEADER_ADD_SCENE,					RspScreenTouchAddScene},
 		{ST_HEADER_DEL_SCENE,					RspScreenTouchDelScene},
@@ -396,13 +410,13 @@ static int GWIF_ProcessData (void)
 {
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
-		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
+//		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
 //			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
 //					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
 //					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
 				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
 //			}
-		}
+//		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \
 					(stateProvision == statePro_findDev))
@@ -536,9 +550,9 @@ static int GWIF_ProcessData (void)
 				uint16_t headerVendor = vrts_GWIF_IncomeMessage->Message[8] | (vrts_GWIF_IncomeMessage->Message[9] << 8);
 				if (opcodeVendor == SENSOR_TYPE) {
 					uint16_t header = vrts_GWIF_IncomeMessage->Message[6] | (vrts_GWIF_IncomeMessage->Message[7] << 8);
-					if (header == 0x0001) {
-						pir_available = true;
-						adrPir = (vrts_GWIF_IncomeMessage->Message[1] | vrts_GWIF_IncomeMessage->Message[2] << 8);
+				if (header == POWER_TYPE) {
+						vrtsCheckPir.available = true;
+						vrtsCheckPir.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
 					}
 					for (int i = 0; i < MAX_FUNCTION0x52_RSP; i++) {
 						if (header == listRspFunction0x52[i].header) {
@@ -559,6 +573,36 @@ static int GWIF_ProcessData (void)
 				}
 				else if (opcodeVendor == RD_OPCODE_SCENE_RSP){
 					if(vendorId == VENDOR_ID){
+						if (headerVendor == HEADER_SCENE_LIGHT_PIR_SET){
+							bufPir temp;
+							temp.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
+							temp.type = typeCfgPir_addScene;
+							temp.idScene = vrts_GWIF_IncomeMessage->Message[10] | (vrts_GWIF_IncomeMessage->Message[11] << 8);
+							if(DelItemForBufPirCmd(temp)){
+								vrtsCheckPir.available = true;
+								vrtsCheckPir.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
+							}
+						}
+						if (headerVendor == HEADER_SCENE_LIGHT_PIR_DEL){
+							bufPir temp1;
+							temp1.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
+							temp1.type = typeCfgPir_delScene;
+							temp1.idScene = vrts_GWIF_IncomeMessage->Message[10] | (vrts_GWIF_IncomeMessage->Message[11] << 8);
+							if(DelItemForBufPirCmd(temp1)){
+								vrtsCheckPir.available = true;
+								vrtsCheckPir.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
+							}
+						}
+						if (headerVendor == HEADER_SCENE_PIR_SENSOR_TIMEACTION){
+							bufPir temp2;
+							temp2.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
+							temp2.type = typeCfgPir_setTimeAction;
+							temp2.idScene = vrts_GWIF_IncomeMessage->Message[10] | (vrts_GWIF_IncomeMessage->Message[11] << 8);
+							if (DelItemForBufPirCmd(temp2)){
+								vrtsCheckPir.available = true;
+								vrtsCheckPir.adr = vrts_GWIF_IncomeMessage->Message[1] | (vrts_GWIF_IncomeMessage->Message[2] << 8);
+							}
+						}
 						for (int m = MAX_FUNCTIONVENDOR_RSP - 1; m >= 0; m--) {
 							if(headerVendor == listRspFunctionVendor[m].headerVendor){
 								listRspFunctionVendor[m].rspFuncVendorProcess(vrts_GWIF_IncomeMessage);

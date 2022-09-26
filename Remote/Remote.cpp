@@ -11,13 +11,6 @@
 using namespace std;
 using namespace rapidjson;
 
-#define REMOTE_DC								(0x0002)
-#define REMOTE_AC								(0x0003)
-#define HEADER_SCENE_REMOTE_AC_SET 				(0x0103)
-#define HEADER_SCENE_REMOTE_AC_DEL 				(0x0203)
-#define HEADER_SCENE_REMOTE_DC_SET 				(0x0102)
-#define HEADER_SCENE_REMOTE_DC_DEL 				(0x0202)
-
 #define BUTTON_MAX			(6)
 string arrayButton[BUTTON_MAX] = {"BUTTON_1","BUTTON_2","BUTTON_3","BUTTON_4","BUTTON_5","BUTTON_6"};
 
@@ -140,6 +133,55 @@ void RspPowerRemoteStatus(TS_GWIF_IncomingData *data) {
 	Data2BufferSendMqtt(s);
 }
 
+void RspControlRGB(TS_GWIF_IncomingData *data) {
+	uint16_t adr = data->Message[1] | (data->Message[2] << 8);
+	uint8_t b = data->Message[11] ;
+	uint8_t g = data->Message[12] ;
+	uint8_t r = data->Message[13] ;
+	uint8_t dimon = data->Message[14];
+	uint8_t dimoff = data->Message[15];
+	uint8_t btn = data->Message[10];
+	uint8_t listProBtn[6] = {11,12,13,14,15,16};
+
+	StringBuffer dataMqtt;
+	Writer<StringBuffer> json(dataMqtt);
+	json.StartObject();
+		json.Key("CMD");json.String("DEVICE_CONTROL");
+		json.Key("DATA");
+		json.StartObject();
+			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("BUTTON_ID"); json.Int(listProBtn[btn-1]);
+			json.Key("PROPERTIES");
+			json.StartArray();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_R);
+				json.Key("VALUE"); json.Int(r);
+			json.EndObject();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_G);
+				json.Key("VALUE"); json.Int(g);
+			json.EndObject();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_B);
+				json.Key("VALUE"); json.Int(b);
+			json.EndObject();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_DIMON);
+				json.Key("VALUE"); json.Int(dimon);
+			json.EndObject();
+			json.StartObject();
+				json.Key("ID"); json.Int(PROPERTY_DIMOFF);
+				json.Key("VALUE"); json.Int(dimoff);
+			json.EndObject();
+			json.EndArray();
+		json.EndObject();
+	json.EndObject();
+
+//	cout << dataMqtt.GetString() << endl;
+	string s1 = dataMqtt.GetString();
+//	slog_info("<mqtt>send: %s", s.c_str());
+	Data2BufferSendMqtt(s1);
+}
 
 
 

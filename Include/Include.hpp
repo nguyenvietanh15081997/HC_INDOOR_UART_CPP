@@ -17,6 +17,7 @@
 #include <time.h>
 #include "../rapidjson/document.h"
 #include "../rapidjson/prettywriter.h"
+#include <vector>
 
 using namespace std;
 
@@ -37,6 +38,11 @@ using namespace std;
 #define PROPERTY_BUTTON2	12
 #define PROPERTY_BUTTON3	13
 #define PROPERTY_BUTTON4	14
+#define PROPERTY_R			64
+#define PROPERTY_G			65
+#define PROPERTY_B			66
+#define PROPERTY_DIMON		67
+#define PROPERTY_DIMOFF		68
 
 extern bool 				gvrb_AddSceneLight;
 extern bool 				gvrb_AddGroupLight;
@@ -58,7 +64,8 @@ extern uint16_t g_listAdrScene[MAX_DEV][2];
 
 typedef enum {
 	typeCmd_Control,
-	typeCmd_Update
+	typeCmd_Update,
+	typeCmd_null
 }typeCmd_t;
 extern typeCmd_t vrte_TypeCmd;
 
@@ -110,15 +117,33 @@ typedef struct bufferDataMqtt{
 	char dataMqtt[MAX_MSG_MQTT];
 }bufferDataMqtt_t;
 
-#define MAX_PIR			100
-extern uartSendDev_t CmdPir[MAX_PIR];
+/*
+ * Config pir sensor
+ */
+typedef enum typeCfgPir{
+	typeCfgPir_addScene,
+	typeCfgPir_delScene,
+	typeCfgPir_setTimeAction,
+	typeCfgPir_null
+}typeCfgPir_t;
+
+typedef struct bufPir{
+	uartSendDev_t 	data;
+	uint16_t 		adr;
+	uint16_t 		idScene;
+	typeCfgPir_t 	type;
+}bufPir_t;
+
+extern vector<bufPir_t> vt_Pir;
+
 extern deque<uartSendDev_t> bufferDataUart;
 extern deque<uartSendDev_t> bufferUartUpdate;
 extern deque<string> 		bufferSendMqtt;
 uartSendDev_t AssignData(uint8_t *data,int length);
 
 void Data2BufferSendMqtt(string s);
-
-int Push2BufPirCmd(uartSendDev_t data);
+bool DelItemForBufPirCmd(bufPir_t data);
+bufPir_t FindBufPir(uint16_t adr);
+void Push2BufSendUart(uartSendDev_t vrts_DataUartSend);
 
 #endif /* INCLUDE_INCLUDE_HPP_ */
