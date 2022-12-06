@@ -22,6 +22,8 @@ pthread_mutex_t vrpth_SendUart = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t vrpth_DelScene = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t vrpth_SendMqtt = PTHREAD_MUTEX_INITIALIZER;
 
+checkPir_t vrtsCheckPir;
+
 bool startProcessRoom = false;
 
 int ptempIndoor;

@@ -11,7 +11,7 @@
 #include "Mqtt/Mqtt.hpp"
 #include "logging/slog.h"
 
-#define VERSION "2.8"
+#define VERSION "1.2.11"
 
 pthread_t vrpth_MqttThread;
 pthread_t vrpth_UartReadThread;

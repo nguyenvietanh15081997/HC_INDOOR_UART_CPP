@@ -32,6 +32,7 @@ extern uint8_t plaintext[];
 extern unsigned int adr_Provision;
 extern bool provisionSuccess;
 extern pthread_t vrpth_Pro;
+extern uint16_t adrMax;
 
 
 typedef enum statePro{

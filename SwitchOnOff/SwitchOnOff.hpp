@@ -59,7 +59,7 @@
 #define SWITCH_RGB_4_TYPE				(22015)
 #define	BLN_RGB_TYPE					(22016)
 #define REM_RGB_TYPE					(22017)
-#define CUA_CUON_RGB_TYPE				(22018)
+#define CUA_CUON						(22018)
 
 #define CONG_TAC_CO_1_TYPE				(24001)
 #define CONG_TAC_CO_2_TYPE				(24002)

@@ -179,7 +179,7 @@ void RspControlRGB(TS_GWIF_IncomingData *data) {
 
 //	cout << dataMqtt.GetString() << endl;
 	string s1 = dataMqtt.GetString();
-//	slog_info("<mqtt>send: %s", s.c_str());
+	slog_info("<mqtt>send: %s", s1.c_str());
 	Data2BufferSendMqtt(s1);
 }
 

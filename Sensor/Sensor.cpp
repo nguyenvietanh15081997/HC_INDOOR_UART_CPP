@@ -198,14 +198,16 @@ void RspPirSenSor(TS_GWIF_IncomingData *data) {
 	pirsensorRsp_t vrts_PirRsp;
 	vrts_PirRsp.pir = data->Message[8] | (data->Message[9] << 8);
 	vrts_PirRsp.sceneId = data->Message[10] | (data->Message[11] << 8);
+
 	if(vrts_PirRsp.sceneId){
 //		FunctionPer(HCI_CMD_GATEWAY_CMD, CallSence_typedef, 65535,
 //				NULL8, NULL8, NULL16, NULL16, vrts_PirRsp.sceneId,
 //				NULL16, NULL16, NULL16, NULL16,
 //				0, 17);
 	}
-	StringBuffer dataMqtt;
+	StringBuffer dataMqtt,dataMqttLux;
 	Writer<StringBuffer> json(dataMqtt);
+	Writer<StringBuffer> json1(dataMqttLux);
 	json.StartObject();
 		json.Key("CMD");json.String("PIR_SENSOR");
 		json.Key("DATA");
@@ -216,10 +218,26 @@ void RspPirSenSor(TS_GWIF_IncomingData *data) {
 		json.EndObject();
 	json.EndObject();
 
-//	cout << dataMqtt.GetString() << endl;
 	string s = dataMqtt.GetString();
 	slog_info("<mqtt>send: %s", s.c_str());
 	Data2BufferSendMqtt(s);
+
+	if((data->Length[0] | (data->Length[1] << 8)) > 13)
+	{
+		uint16_t lux = data->Message[12] | (data->Message[13] << 8);
+		json1.StartObject();
+			json1.Key("CMD");json1.String("LIGHT_SENSOR");
+			json1.Key("DATA");
+			json1.StartObject();
+				json1.Key("DEVICE_UNICAST_ID");json1.Int(adr);
+				json1.Key("LUX_VALUE");json1.Int(lux);
+			json1.EndObject();
+		json1.EndObject();
+
+		string s1 = dataMqttLux.GetString();
+		slog_info("<mqtt>send: %s", s1.c_str());
+		Data2BufferSendMqtt(s1);
+	}
 }
 
 static uint16_t CalculateLux(uint16_t rsp_lux){

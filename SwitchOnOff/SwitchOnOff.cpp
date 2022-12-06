@@ -510,6 +510,7 @@ void Rsp_Switch_ControlRGB (TS_GWIF_IncomingData *data){
 		json.Key("DATA");
 		json.StartObject();
 			json.Key("DEVICE_UNICAST_ID");json.Int(adr);
+			json.Key("BUTTON_ID"); json.Int(listProBtn[btn-1]);
 			json.Key("PROPERTIES");
 			json.StartArray();
 			json.StartObject();

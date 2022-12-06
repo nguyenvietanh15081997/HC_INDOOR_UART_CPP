@@ -123,18 +123,13 @@ static void LogDataUart(bool hasRsp, uint8_t length, void *data){
 static uint64_t t1, t2, t3, t4;
 static uint64_t waitCmd, waitUpdate;
 
-typedef struct checkPir{
-	bool available;
-	uint16_t adr;
-}checkPir_t;
-checkPir_t vrtsCheckPir;
-
 static void GWIF_WriteMessage(void) {
 	if (pthread_mutex_trylock(&vrpth_SendUart)==0){
 		if (vt_Pir.size() > 0){
 			if (vrtsCheckPir.available){
 				vrtsCheckPir.available = false;
-				bufPir temp = FindBufPir(vrtsCheckPir.adr);
+				bufPir_t temp = FindBufPir(vrtsCheckPir.adr);
+				cout << vrtsCheckPir.adr << endl;
 				write(serial_port, ToChar(temp.data.dataUart), temp.data.length);
 				tcdrain(serial_port);
 				LogDataUart(0, temp.data.length, (void*) &temp.data.dataUart.HCI_CMD_GATEWAY[0]);
@@ -410,13 +405,13 @@ static int GWIF_ProcessData (void)
 {
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
-//		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
-//			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
-//					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
-//					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
+		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
+			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
+					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
+					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
 				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
-//			}
-//		}
+			}
+		}
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \
 					(stateProvision == statePro_findDev))
@@ -442,50 +437,48 @@ static int GWIF_ProcessData (void)
 				slog_print(SLOG_INFO,1,"%s",(char *)PRO_uuid);
 				stateProvision = statePro_selectMac;
 
-			} else if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_PRO_STS_RSP)
-					&& (vrts_GWIF_IncomeMessage->Message[21] != 0x11)
-					&& (vrts_GWIF_IncomeMessage->Message[22] != 0x22)
-					&& (vrts_GWIF_IncomeMessage->Message[23] != 0x33)
-					&& (vrts_GWIF_IncomeMessage->Message[24] != 0x44)) {
-				stateProvision = statePro_setPro;
-/*			}
-			else if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_SETPRO_SUSCESS) && \
-					(stateProvision == statePro_waitSetPro)){
-				stateProvision = statePro_getPro;
-*/
-			} else if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_PRO_STS_RSP) &&\
-						(vrts_GWIF_IncomeMessage->Message[21] == 0x11) &&\
-						(vrts_GWIF_IncomeMessage->Message[22] == 0x22) &&\
-						(vrts_GWIF_IncomeMessage->Message[23] == 0x33) &&\
-						(vrts_GWIF_IncomeMessage->Message[24] == 0x44)) {
-				OUTMESSAGE_Provision[0] = HCI_CMD_GATEWAY_CTL & 0xFF;    //0xE9
-				OUTMESSAGE_Provision[1] = (HCI_CMD_GATEWAY_CTL >> 8) & 0xFF; //0xFF;
-				OUTMESSAGE_Provision[2] = HCI_GATEWAY_CMD_SET_NODE_PARA;
-				if ((vrts_GWIF_IncomeMessage->Message[25] == 0x00) && \
-						(vrts_GWIF_IncomeMessage->Message[26] == 0x00)) {
-					for (int i = 0; i < 23; i++) {
-						OUTMESSAGE_Provision[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 2];
-					}
-					OUTMESSAGE_Provision[26] = 0x02;
-					OUTMESSAGE_Provision[27] = 0x00;
-					adr_Provision = 2;
-				} else {
-					for (int i = 0; i < 25; i++) {
-						OUTMESSAGE_Provision[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 2];
-					}
-					adr_Provision = OUTMESSAGE_Provision[26] | (OUTMESSAGE_Provision[27] << 8);
+			} else if (vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_PRO_STS_RSP) {
+				uint32_t ivIndex = (vrts_GWIF_IncomeMessage->Message[21] <<24) | (vrts_GWIF_IncomeMessage->Message[22] << 16) | (vrts_GWIF_IncomeMessage->Message[23] << 8) | vrts_GWIF_IncomeMessage->Message[24];
+//				cout << "iv:" << ivIndex <<endl;
+				if ((ivIndex != 0x11223344) && (ivIndex != 0)) {
+					stateProvision = statePro_setPro;
 				}
-				sprintf((char*) PRO_netKey,
-						"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-						vrts_GWIF_IncomeMessage->Message[2],vrts_GWIF_IncomeMessage->Message[3],
-						vrts_GWIF_IncomeMessage->Message[4],vrts_GWIF_IncomeMessage->Message[5],
-						vrts_GWIF_IncomeMessage->Message[6],vrts_GWIF_IncomeMessage->Message[7],
-						vrts_GWIF_IncomeMessage->Message[8],vrts_GWIF_IncomeMessage->Message[9],
-						vrts_GWIF_IncomeMessage->Message[10],vrts_GWIF_IncomeMessage->Message[11],
-						vrts_GWIF_IncomeMessage->Message[12],vrts_GWIF_IncomeMessage->Message[13],
-						vrts_GWIF_IncomeMessage->Message[14],vrts_GWIF_IncomeMessage->Message[15],
-						vrts_GWIF_IncomeMessage->Message[16],vrts_GWIF_IncomeMessage->Message[17]);
-				stateProvision = statePro_provision;
+				if ((ivIndex == 0x11223344) || (ivIndex == 0)) {
+					OUTMESSAGE_Provision[0] = HCI_CMD_GATEWAY_CTL & 0xFF;    //0xE9
+					OUTMESSAGE_Provision[1] = (HCI_CMD_GATEWAY_CTL >> 8) & 0xFF; //0xFF;
+					OUTMESSAGE_Provision[2] = HCI_GATEWAY_CMD_SET_NODE_PARA;
+					if ((vrts_GWIF_IncomeMessage->Message[25] == 0x00) && (vrts_GWIF_IncomeMessage->Message[26] == 0x00) && (adrMax == 0)) {
+						for (int i = 0; i < 23; i++) {
+							OUTMESSAGE_Provision[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 2];
+						}
+						OUTMESSAGE_Provision[26] = 0x02;
+						OUTMESSAGE_Provision[27] = 0x00;
+						adr_Provision = 2;
+					} else if((vrts_GWIF_IncomeMessage->Message[25] == 0x00) && (vrts_GWIF_IncomeMessage->Message[26] == 0x00) && (adrMax > 0)){
+						for (int i = 0; i < 23; i++) {
+							OUTMESSAGE_Provision[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 2];
+						}
+						OUTMESSAGE_Provision[26] = (adrMax+10) & 0xFF;
+						OUTMESSAGE_Provision[27] = ((adrMax+10) >> 8) & 0xFF;
+						adr_Provision = adrMax+10;
+					}else {
+						for (int i = 0; i < 25; i++) {
+							OUTMESSAGE_Provision[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 2];
+						}
+						adr_Provision = OUTMESSAGE_Provision[26] | (OUTMESSAGE_Provision[27] << 8);
+					}
+					sprintf((char*) PRO_netKey,
+							"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+							vrts_GWIF_IncomeMessage->Message[2],vrts_GWIF_IncomeMessage->Message[3],
+							vrts_GWIF_IncomeMessage->Message[4],vrts_GWIF_IncomeMessage->Message[5],
+							vrts_GWIF_IncomeMessage->Message[6],vrts_GWIF_IncomeMessage->Message[7],
+							vrts_GWIF_IncomeMessage->Message[8],vrts_GWIF_IncomeMessage->Message[9],
+							vrts_GWIF_IncomeMessage->Message[10],vrts_GWIF_IncomeMessage->Message[11],
+							vrts_GWIF_IncomeMessage->Message[12],vrts_GWIF_IncomeMessage->Message[13],
+							vrts_GWIF_IncomeMessage->Message[14],vrts_GWIF_IncomeMessage->Message[15],
+							vrts_GWIF_IncomeMessage->Message[16],vrts_GWIF_IncomeMessage->Message[17]);
+					stateProvision = statePro_provision;
+				}
 			} else if(vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_SEND_NODE_INFO){
 				sprintf((char*) PRO_deviceKey,
 						"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -632,7 +625,7 @@ void* GWINF_Thread(void *vargp) {
 		GWIF_Read2Buffer();
 		GWIF_CheckData();
 		GWIF_ProcessData();
-		usleep(1000);
+		usleep(3000);
 	}
 	return NULL;
 }

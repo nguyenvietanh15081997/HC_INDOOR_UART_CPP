@@ -6,6 +6,7 @@
 #include "../Include/Include.hpp"
 #include "../BuildCmdUart/BuildCmdUart.hpp"
 #include "../Mqtt/Mqtt.hpp"
+#include <sqlite3.h>
 #include "AES.h"
 
 #include <sys/time.h>
@@ -17,6 +18,7 @@
 using namespace std;
 using namespace rapidjson;
 bool provisionSuccess = false;
+string appKeyBle;
 
 uint8_t OUTMESSAGE_ScanStop[3]     = {0xE9, 0xFF, 0x01};
 uint8_t OUTMESSAGE_ScanStart[3]    = {0xE9, 0xFF, 0x00};
@@ -57,6 +59,63 @@ statePro_t stateProvision = statePro_scan;
 unsigned int adr_Provision = 0;
 pthread_t vrpth_Pro = pthread_self();
 static time_t timeCurrent, timeLast;
+uint16_t adrMax = 0;
+
+template<typename T>
+string ToString(const T &value) {
+	std::ostringstream oss;
+	oss << value;
+	return oss.str();
+}
+
+static int getAdrMax(void *data, int argc, char **argv, char **azColName)
+{
+	if(argc > 0)
+	{
+		for (int i = 0; i < argc; i++) {
+			if ((const char *)argv[0] != NULL) {
+				adrMax = atoi((const char *)argv[0]);
+			}
+		}
+	}
+	return 0;
+}
+
+static int getAppKeyBLE(void *data, int argc, char **argv, char **azColName)
+{
+	if (argc > 0) {
+		for(int i = 0; i < argc; i++)
+		{
+			appKeyBle = ToString((char *)argv[i]);
+		}
+	}
+	return 0;
+}
+static void Pro_GetDb(string cmd, string sql) {
+	sqlite3 *db;
+	int exit = 0;
+	do {
+		exit = sqlite3_open("/root/rd.Sqlite", &db);
+	} while (exit != SQLITE_OK);
+	char *messaggeError;
+	if (cmd.compare("getAddMax") == 0)
+	{
+		while (sqlite3_exec(db, sql.c_str(), getAdrMax, 0, &messaggeError) != SQLITE_OK) {
+			puts(messaggeError);
+			sqlite3_free(messaggeError);
+			usleep(100000);
+		}
+	}
+	else if (cmd.compare("getAppKey") == 0)
+	{
+		while (sqlite3_exec(db, sql.c_str(), getAppKeyBLE, 0, &messaggeError) != SQLITE_OK) {
+			puts(messaggeError);
+			sqlite3_free(messaggeError);
+			usleep(100000);
+		}
+	}
+	sqlite3_close(db);
+}
 
 static void Pro_Scan(void) {
 	gvrb_Provision = true;
@@ -158,7 +217,6 @@ static void Pro_BindingAll(void) {
 	timeCurrent = time(NULL);
 }
 static void Pro_SaveGate(void) {
-	sleep(1);
 	save_gw[8] = adr_Provision;
 	save_gw[9] = (adr_Provision >> 8) & 0xFF;
 	bufferDataUart.push_back(AssignData(save_gw, 23));
@@ -216,6 +274,31 @@ static void Pro_ResetNode(void){
 	stateProvision = statePro_scan;
 }
 
+static void Pro_GetInfoMeshBle() {
+	string sql = "SELECT AppKey FROM Device Where DeviceId NOT NULL;";
+	Pro_GetDb("getAppKey",sql);
+	slog_info("Appkey: %s", appKeyBle.c_str());
+	if (appKeyBle.compare("") != 0)
+	{
+		appKeyBle.erase(appKeyBle.begin()+8, appKeyBle.begin()+9);
+		appKeyBle.erase(appKeyBle.begin()+12, appKeyBle.begin()+13);
+		appKeyBle.erase(appKeyBle.begin()+16, appKeyBle.begin()+17);
+		appKeyBle.erase(appKeyBle.begin()+20, appKeyBle.begin()+21);
+		char * ak = new char[appKeyBle.length()+1];
+		strcpy(ak,appKeyBle.c_str());
+		uint8_t temp[17] = {0};
+		for(int i =0; i < 16; i++)
+		{
+			sscanf((char *)ak + i*2,"%2x" ,&temp[i]);
+			OUTMESSAGE_BindingALl[i+6] = temp[i];
+		}
+	}
+
+	string sql1 = "SELECT Max(DeviceunicastId) FROM Device Where DeviceId NOT NULL;";
+	Pro_GetDb("getAddMax",sql1);
+	slog_info("Device unicast max: %d", adrMax);
+}
+
 void (*state_Table[])(void) = { Pro_Scan, Pro_Stop, Pro_SelectMac, Pro_GetPro,
 		Pro_SetPro, Pro_Provision, Pro_BindingAll, Pro_SaveGate,
 		Pro_TypeDev, TimeoutPro, FindDev, Pro_ResetNode};
@@ -223,6 +306,7 @@ void (*state_Table[])(void) = { Pro_Scan, Pro_Stop, Pro_SelectMac, Pro_GetPro,
 static statePro_t stateCurrent, stateLast;
 void *Pro_Thread(void *argv){
 	stateCurrent = statePro_null;
+	Pro_GetInfoMeshBle();
 	while(MODE_PROVISION){
 		stateLast = stateProvision;
 		if(stateLast != stateCurrent){

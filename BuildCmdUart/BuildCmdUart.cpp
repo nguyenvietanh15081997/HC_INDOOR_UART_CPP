@@ -1152,7 +1152,10 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 		pirCmdSetTime.data = vrts_DataUartSend;
 		pirCmdSetTime.idScene = condition_lightness;
 		pirCmdSetTime.type = typeCfgPir_setTimeAction;
+		cout << adr << ":" << condition_lightness << endl;
 		vt_Pir.push_back(pirCmdSetTime);
+		vrtsCheckPir.available = true;
+		vrtsCheckPir.adr = adr;
 	} else if (Func_vendor == SceneForSensor_Pir_vendor_typedef
 			|| Func_vendor == SceneForSensor_LightPir_vendor_typedef){
 		bufPir_t pirCmdSetScene;
@@ -1161,6 +1164,8 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 		pirCmdSetScene.idScene = sceneID;
 		pirCmdSetScene.type = typeCfgPir_addScene;
 		vt_Pir.push_back(pirCmdSetScene);
+		vrtsCheckPir.available = true;
+		vrtsCheckPir.adr = adr;
 	} else if (Func_vendor == DelSceneForSensor_Pir_vendor_typedef
 			|| Func_vendor == DelSceneForSensor_LightPir_vendor_typedef){
 		bufPir_t pirCmdDelScene;
@@ -1169,6 +1174,8 @@ void Function_Vendor(uint16_t cmd, functionTypeDef Func_vendor, uint16_t adr,
 		pirCmdDelScene.idScene = sceneID;
 		pirCmdDelScene.type = typeCfgPir_delScene;
 		vt_Pir.push_back(pirCmdDelScene);
+		vrtsCheckPir.available = true;
+		vrtsCheckPir.adr = adr;
 	} else {
 		bufferDataUart.push_back(vrts_DataUartSend);
 	}

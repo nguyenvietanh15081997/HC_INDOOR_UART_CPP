@@ -1202,6 +1202,7 @@ static void TimeActionPir(char *msg) {
 			if (data.HasMember("DEVICE_UNICAST_ID") && data.HasMember("TIME")) {
 				adr = data["DEVICE_UNICAST_ID"].GetInt();
 				timeAction = data["TIME"].GetInt();
+				cout << adr << timeAction << endl;
 				Function_Vendor(HCI_CMD_GATEWAY_CMD,
 						SetTimeAction_vendor_typedef, adr, NULL16, NULL8, NULL8,
 						NULL8, timeAction, NULL16, NULL16, NULL16, NULL16, NULL16,
@@ -1596,7 +1597,7 @@ static void Backup_Ble(char *msg){
 			const Value& data = document["DATA"];
 			if(data.HasMember("DIRECTORY") && data["DIRECTORY"].IsString()){
 				string direc = data["DIRECTORY"].GetString();
-				BACKUP_callback((char*)direc.c_str());
+				BACKUP2HC_callback(direc);
 
 				StringBuffer sendToDB;
 				Writer<StringBuffer> json(sendToDB);
@@ -1676,7 +1677,7 @@ static void DeviceControl(char *msg){
 		const Value& data = document["DATA"];
 		if (data.HasMember("DEVICE_UNICAST_ID") && data["DEVICE_UNICAST_ID"].IsInt()){
 			adr = data["DEVICE_UNICAST_ID"].GetInt();
-			if (type_dev == CONG_TAC_REM){
+			if (type_dev == CONG_TAC_REM || type_dev == REM_RGB_TYPE || type_dev == CUA_CUON){
 				if(data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
 					const Value& properties = data["PROPERTIES"];
 					for(SizeType i =0; i< properties.Size(); i++){
@@ -1684,7 +1685,7 @@ static void DeviceControl(char *msg){
 						if (property.HasMember("ID") && property["ID"].IsInt()){
 							id = property["ID"].GetInt();
 							if (id == REM_DUNG){
-								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_PAUSE, NULL8, NULL16);
+								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_PAUSE, 1, NULL16);
 							} else if (id == REM_MO) {
 								CURTAIN_Cmd(enum_curtain_control, adr, CURTAIN_OPEN, NULL8, NULL16);
 							} else if (id == REM_DONG) {
@@ -1701,7 +1702,8 @@ static void DeviceControl(char *msg){
 						}
 					}
 				}
-			} else if (type_dev == CONG_TAC_RGB_CT1
+			}
+			if (type_dev == CONG_TAC_RGB_CT1
 					|| type_dev == CONG_TAC_RGB_CT2
 					|| type_dev == CONG_TAC_RGB_CT3
 					|| type_dev == CONG_TAC_RGB_CT4
@@ -1710,7 +1712,8 @@ static void DeviceControl(char *msg){
 					|| type_dev == CONG_TAC_CO_1_TYPE
 					|| type_dev == CONG_TAC_CO_2_TYPE
 					|| type_dev == CONG_TAC_CO_3_TYPE
-					|| type_dev == CONG_TAC_CO_4_TYPE) {
+					|| type_dev == CONG_TAC_CO_4_TYPE
+					|| type_dev == CONG_TAC_REM_RGB) {
 				if (data.HasMember("PROPERTIES") && data["PROPERTIES"].IsArray()){
 					const Value& properties = data["PROPERTIES"];
 					bool hasR = false;
@@ -1729,12 +1732,15 @@ static void DeviceControl(char *msg){
 							id = property["ID"].GetInt();
 							if (id == PROPERTY_R){
 								r =  property["VALUE"].GetInt();
+								cout << r << endl;
 								hasR = true;
 							} else if (id == PROPERTY_G) {
 								g = property["VALUE"].GetInt();
+								cout << g << endl;
 								hasG = true;
 							} else if (id == PROPERTY_B) {
 								b = property["VALUE"].GetInt();
+								cout << b << endl;
 								hasB = true;
 							} else if (id == PROPERTY_DIMON) {
 								dimOn = property["VALUE"].GetInt();
@@ -1779,6 +1785,276 @@ static void DeviceControl(char *msg){
 				}
 			}
 		}
+	}
+}
+
+static bool hasAppKey = false;
+static bool hasNetKey = false;
+static bool hasGw = false;
+static bool hasDev = false;
+static void Backup2AppBle(char *msg) {
+	string ble_appKey = "null";
+	string ble_netKey = "null";
+	string ble_index = "null";
+	string v = "-";
+	uint32_t ivIndex;
+	infoDev_t ble_gw;
+	vector<infoDev_t> ble_listDev;
+	Document document;
+	document.Parse(msg);
+	if(document.HasMember("appKeys") && document["appKeys"].IsArray())
+	{
+		const Value& ak = document["appKeys"];
+		for(SizeType i = 0; i < ak.Size(); i++) {
+			const Value& temp1 = ak[i];
+			if(temp1.HasMember("index") && temp1["index"].IsInt() && temp1.HasMember("key") && temp1["key"].IsString()) {
+				if (temp1["index"].GetInt() == 0) {
+					ble_appKey = temp1["key"].GetString();
+					ble_appKey.insert(8,v);
+					ble_appKey.insert(13,v);
+					ble_appKey.insert(18,v);
+					ble_appKey.insert(23,v);
+					cout << "app:" << ble_appKey << endl;
+					hasAppKey = true;
+					break;
+				}
+			}
+		}
+	}
+
+	if (document.HasMember("ivIndex") && document["ivIndex"].IsString())
+	{
+		ble_index = document["ivIndex"].GetString();
+		char * uartConvertChar = new char[ble_index.length() +1];
+		strcpy(uartConvertChar, ble_index.c_str());
+		uint8_t uartArray[5] = {0};
+		for (int i =0; i < (int)(strlen(uartConvertChar)/2); i++){
+			sscanf((char *)uartConvertChar + i*2,"%2x" ,&uartArray[i]);
+		}
+		ivIndex = (uartArray[0] << 24) | (uartArray[1] << 16) | (uartArray[2] << 8) | uartArray[3];
+		delete(uartConvertChar);
+	}
+
+	if (document.HasMember("netKeys") && document["netKeys"].IsArray())
+	{
+		const Value & nk = document["netKeys"];
+		for(SizeType j = 0; j < nk.Size(); j++) {
+			const Value& temp2 = nk[j];
+			if (temp2.HasMember("index") && temp2["index"].IsInt() && temp2.HasMember("key") && temp2["key"].IsString()) {
+				if (temp2["index"].GetInt() == 0) {
+					ble_netKey = temp2["key"].GetString();
+					ble_netKey.insert(8,v);
+					ble_netKey.insert(13,v);
+					ble_netKey.insert(18,v);
+					ble_netKey.insert(23,v);
+					cout << ble_netKey << endl;
+					hasNetKey = true;
+					break;
+				}
+			}
+		}
+	}
+
+	if (document.HasMember("nodes") && document["nodes"].IsArray())
+	{
+		const Value& nodes = document["nodes"];
+		for (SizeType n = 0; n < nodes.Size(); n++)
+		{
+			const Value& node = nodes[n];
+			if (node.HasMember("name") && node["name"].IsString()
+					&& node.HasMember("unicastAddress") && node["unicastAddress"].IsString()
+					&& node.HasMember("deviceKey") && node["deviceKey"].IsString()
+					&& node.HasMember("UUID") && node["UUID"].IsString())
+			{
+				string name = node["name"].GetString();
+				if (name.compare("Provisioner Node") == 0)
+				{
+					string adrGw = node["unicastAddress"].GetString();
+					ble_gw.adr = stoi(adrGw);
+					ble_gw.devKey = node["deviceKey"].GetString();
+					ble_gw.devKey.insert(8,v);
+					ble_gw.devKey.insert(13,v);
+					ble_gw.devKey.insert(18,v);
+					ble_gw.devKey.insert(23,v);
+					hasGw = true;
+					string uuid = node["UUID"].GetString();
+					uuid.insert(8,v);
+					uuid.insert(13,v);
+					uuid.insert(18,v);
+					uuid.insert(23,v);
+					StringBuffer dataMqtt;
+					Writer<StringBuffer> json(dataMqtt);
+					json.StartObject();
+						json.Key("CMD");json.String("NEW_DEVICE");
+						json.Key("DATA");
+						json.StartObject();
+							json.Key("DEVICE_UNICAST_ID");json.Int(ble_gw.adr);
+							json.Key("DEVICE_ID");json.String(uuid.c_str());
+							json.Key("DEVICE_TYPE_ID");json.Int(0);
+							json.Key("MAC_ADDRESS");json.String("00:00:00:00:00:00");
+							json.Key("FIRMWARE_VERSION");json.String("1.0");
+							json.Key("DEVICE_KEY");json.String(ble_gw.devKey.c_str());
+							json.Key("NET_KEY");json.String(ble_netKey.c_str());
+							json.Key("APP_KEY");json.String(ble_appKey.c_str());
+						json.EndObject();
+					json.EndObject();
+
+				//	cout << dataMqtt.GetString() << endl;
+					string s = dataMqtt.GetString();
+					slog_info("<mqtt>send: %s", s.c_str());
+					Data2BufferSendMqtt(s);
+				}
+				else
+				{
+					infoDev_t dev;
+					string adrDev = node["unicastAddress"].GetString();
+					char * temp3 = new char[adrDev.length()+1];
+					strcpy(temp3,adrDev.c_str());
+					uint8_t k[3] = {0};
+					for (int h = 0; h < 2; h++)
+					{
+						sscanf((char*)temp3 + h*2,"%2x", &k[h]);
+					}
+					uint16_t adrConvert = k[0] << 8 | k[1];
+					delete(temp3);
+					cout << "Adr:" << adrConvert << endl;
+					dev.adr = adrConvert;
+					dev.devKey = node["deviceKey"].GetString();
+					dev.devKey.insert(8,v);
+					dev.devKey.insert(13,v);
+					dev.devKey.insert(18,v);
+					dev.devKey.insert(23,v);
+					ble_listDev.push_back(dev);
+					hasDev = true;
+					string uuidDev = node["UUID"].GetString();
+					uuidDev.insert(8,v);
+					uuidDev.insert(13,v);
+					uuidDev.insert(18,v);
+					uuidDev.insert(23,v);
+					StringBuffer dataMqtt;
+					Writer<StringBuffer> json(dataMqtt);
+					json.StartObject();
+						json.Key("CMD");json.String("NEW_DEVICE");
+						json.Key("DATA");
+						json.StartObject();
+							json.Key("DEVICE_UNICAST_ID");json.Int(dev.adr);
+							json.Key("DEVICE_ID");json.String(uuidDev.c_str());
+							json.Key("DEVICE_TYPE_ID");json.Int(0);
+							json.Key("MAC_ADDRESS");json.String("");
+							json.Key("FIRMWARE_VERSION");json.String("1.0");
+							json.Key("DEVICE_KEY");json.String(dev.devKey.c_str());
+							json.Key("NET_KEY");json.String(ble_netKey.c_str());
+							json.Key("APP_KEY");json.String(ble_appKey.c_str());
+						json.EndObject();
+					json.EndObject();
+
+				//	cout << dataMqtt.GetString() << endl;
+					string s = dataMqtt.GetString();
+					slog_info("<mqtt>send: %s", s.c_str());
+					Data2BufferSendMqtt(s);
+				}
+			}
+		}
+	}
+
+//	if (document.IsObject()) {
+//		if (document.HasMember("ivIndex") && document["ivIndex"].IsString()){
+//			ble_index = document["ivIndex"].GetString();
+//			char * uartConvertChar = new char[ble_index.length() +1];
+//			strcpy(uartConvertChar, ble_index.c_str());
+//			uint8_t uartArray[5] = {0};
+//			for (int i =0; i < (int)(strlen(uartConvertChar)/2); i++){
+//				sscanf((char *)uartConvertChar + i*2,"%2x" ,&uartArray[i]);
+////				printf("%02x ",uartArray[i]);
+//			}
+//			ivIndex = (uartArray[0] << 24) | (uartArray[1] << 16) | (uartArray[2] << 8) | uartArray[3];
+//		}
+//		const Value& database = document["database"];
+//		if (database.HasMember("appKeys") && database["appKeys"].IsArray()) {
+//			const Value& appKeys = database["appKeys"];
+//			if (appKeys.Size() > 0) {
+//				const Value& item1 = appKeys[0];
+//				if (item1.HasMember("key") && item1["key"].IsString()) {
+//					ble_appKey = item1["key"].GetString();
+//					hasAppKey = true;
+//				}
+//			} else {
+//				slog_print(SLOG_WARN, 1, "<backup>don't have appKey");
+//			}
+//		}
+//		if (database.HasMember("netKeys") && database["netKeys"].IsArray()) {
+//			const Value& netKeys = database["netKeys"];
+//			if (netKeys.Size() > 0){
+//				const Value& item2 = netKeys[0];
+//				if (item2.HasMember("key") && item2["key"].IsString()) {
+//					ble_netKey = item2["key"].GetString();
+//					hasNetKey = true;
+//				}
+//			} else {
+//				slog_print(SLOG_WARN, 1, "<backup> don't have netkey");
+//			}
+//		}
+//		if (database.HasMember("provisioner") && database["provisioner"].IsObject()) {
+//			const Value& provisioner = database["provisioner"];
+//			if (provisioner.HasMember("deviceKey") && provisioner["deviceKey"].IsString() && provisioner.HasMember("unicastAddress") && provisioner["unicastAddress"].IsString()) {
+//				string adrGw = provisioner["unicastAddress"].GetString();
+//				ble_gw.adr = stoi(adrGw);
+//				ble_gw.devKey = provisioner["deviceKey"].GetString();
+//				hasGw = true;
+//			} else {
+//				slog_print(SLOG_WARN, 1, "<backup>gw not enough info");
+//			}
+//		}
+//		if (database.HasMember("deviceDAO") && database["deviceDAO"].IsArray()) {
+//			const Value& devices = database["deviceDAO"];
+//			if (devices.Size() > 0) {
+//				for (SizeType j = 0; j < devices.Size(); j++) {
+//					const Value& item3 = devices[j];
+//					if (item3.HasMember("deviceKey") && item3["deviceKey"].IsString() && item3.HasMember("meshAddress") && item3["meshAddress"].IsInt()) {
+//						infoDev_t dev;
+//						dev.adr = item3["meshAddress"].GetInt();
+//						dev.devKey = item3["deviceKey"].GetString();
+//						ble_listDev.push_back(dev);
+//					}
+//				}
+//				hasDev = true;
+//			} else {
+//				slog_print(SLOG_WARN, 1, "<backup> don't have any device");
+//			}
+//		}
+//	}
+	if (hasAppKey && hasDev && hasGw && hasNetKey) {
+		hasAppKey = false;
+		hasDev = false;
+		hasGw = false;
+		hasNetKey = false;
+		BACKUP_Init();
+		BACKUP_gw(ble_gw);
+		BACKUP_dev(ble_listDev);
+		BACKUP_updateNetKey(ble_netKey, ble_gw, ivIndex);
+		BACKUP_updateNewDevKey(ble_gw);
+		BACKUP_updateAppKey(ble_appKey);
+
+		sleep(1);
+		BACKUP_DeviceUnicastIdMax(ble_listDev);
+
+		StringBuffer sendToDB;
+		Writer<StringBuffer> json(sendToDB);
+
+		json.StartObject();
+		json.Key("CMD");
+		json.String("BACKUP");
+		json.Key("DATA");
+			json.StartObject();
+				json.Key("SUCCESS");
+				json.Bool(true);
+			json.EndObject();
+		json.EndObject();
+
+	//	cout << sendToDB.GetString() << endl;
+		string s = sendToDB.GetString();
+		slog_info("<mqtt>send: %s", s.c_str());
+		Data2BufferSendMqtt(s);
 	}
 }
 
@@ -1861,6 +2137,8 @@ void JsonHandle(char * data) {
 					break;
 				}
 			}
+		} else if(document.HasMember("appKeys") && document.HasMember("netKeys") && document.HasMember("nodes") && document.HasMember("ivIndex")) {
+			Backup2AppBle(data);
 		}
 	}
 	Document objDelete;

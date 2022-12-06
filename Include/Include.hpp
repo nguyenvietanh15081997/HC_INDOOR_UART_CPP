@@ -112,7 +112,7 @@ typedef struct uartSendDev_Vendor{
 	long 				timeWait;
 }uartSendDev_Vendor_t;
 
-#define MAX_MSG_MQTT 		512
+#define MAX_MSG_MQTT 		4096
 typedef struct bufferDataMqtt{
 	char dataMqtt[MAX_MSG_MQTT];
 }bufferDataMqtt_t;
@@ -135,6 +135,12 @@ typedef struct bufPir{
 }bufPir_t;
 
 extern vector<bufPir_t> vt_Pir;
+
+typedef struct checkPir{
+	bool available;
+	uint16_t adr;
+}checkPir_t;
+extern checkPir_t vrtsCheckPir;
 
 extern deque<uartSendDev_t> bufferDataUart;
 extern deque<uartSendDev_t> bufferUartUpdate;

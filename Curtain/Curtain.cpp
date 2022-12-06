@@ -9,7 +9,7 @@
 using namespace std;
 using namespace rapidjson;
 
-#define CURTAIN_LENGTH_CONTROL			19
+#define CURTAIN_LENGTH_CONTROL			23
 #define CURTAIN_LENGTH_STATUS_REQUEST	17
 #define CURTAIN_LENGTH_SCENE_SET		19
 #define CURTAIN_LENGTH_SCENE_DEL		19
@@ -268,7 +268,7 @@ void CURTAIN_RSP_Calib(TS_GWIF_IncomingData *data) {
 						json.Key("VALUE"); json.Int(100);
 					} else if (status == 2) {
 						json.Key("ID");json.Int(56);
-						json.Key("VALUE"); json.Int(0);
+						json.Key("VALUE"); json.Int(1);
 					}
 				json.EndObject();
 			json.EndArray();

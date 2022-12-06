@@ -11,12 +11,26 @@
 
 #include "../Include/Include.hpp"
 #include <sqlite3.h>
+typedef enum{
+	inforGw,
+	inforDev,
+	infoAppKey,
+	infoNetKey,
+}type_get_db;
 
-void BACKUP_updateNetKey(char *db);
-void BACKUP_updateNewDevKey();
-void BACKUP_updateAppKey(char *db);
-void BACKUP_gw(char *db);
-void BACKUP_dev(char *db) ;
-void BACKUP_callback(char *dir);
+typedef struct infoDev{
+	uint16_t adr;
+	string devKey;
+}infoDev_t;
+
+void BACKUP_updateNetKey(string netkey, infoDev_t gw, uint32_t index);
+void BACKUP_updateNewDevKey(infoDev_t gw);
+void BACKUP_updateAppKey(string appkey);
+void BACKUP_gw(infoDev_t gw);
+void BACKUP_dev(vector<infoDev_t> listDev);
+void BACKUP_DeviceUnicastIdMax(vector<infoDev_t> listDev);
+
+void BACKUP_Init();
+void BACKUP2HC_callback(string db);
 
 #endif /* BACKUPBLE_BACKUPBLE_HPP_ */
