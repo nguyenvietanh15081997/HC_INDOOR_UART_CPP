@@ -370,6 +370,7 @@ void FunctionPer(uint16_t cmd, functionTypeDef Func, uint16_t unicastAdr,
 	uint64_t timeWait = TIMEWAIT;
 	if(Func == ResetNode_typedef){
 		CmdResetNode(unicastAdr);
+		timeWait = 900;
 	}
 	else if(Func == Lightness_Get_typedef){
 		CmdLightness_Get(unicastAdr);

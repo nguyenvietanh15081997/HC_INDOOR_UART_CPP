@@ -34,27 +34,29 @@ void connect_callback(struct mosquitto *mosq, void *obj, int result) {
 }
 
 void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
-//	int lengthMsg = strlen((char *)message->payload);
-//#if 1
-//	bufferDataMqtt_t dataPush = {{0}};
-//	memcpy(dataPush.dataMqtt,message->payload,lengthMsg+1);
-//	Document document;
-//	document.Parse(dataPush.dataMqtt);
-////	slog_info("<mqtt>receive: %s", dataPush.dataMqtt);
-//	if(document.IsObject()){
-//		ring_push_head((ringbuffer_t *)&vr_RingBufDataMqtt,(void *)(&dataPush));
-//	}
-//	else {
-//		slog_print(SLOG_WARN,1,"<mqtt>message invalid");
-//	}
-//	if (vr_RingBufDataMqtt.count > 0) {
-//		bufferDataMqtt_t dataPop = {{0}};
-//		ring_pop_tail(&vr_RingBufDataMqtt,(void *) &dataPop);
-//		JsonHandle((char *)dataPop.dataMqtt);
-//	}
-//	Document objDelete;
-//	document.Swap(objDelete);
-//#endif
+
+#if 0
+	int lengthMsg = strlen((char *)message->payload);
+	bufferDataMqtt_t dataPush = {{0}};
+	memcpy(dataPush.dataMqtt,message->payload,lengthMsg+1);
+	Document document;
+	document.Parse(dataPush.dataMqtt);
+//	slog_info("<mqtt>receive: %s", dataPush.dataMqtt);
+	if(document.IsObject()){
+		ring_push_head((ringbuffer_t *)&vr_RingBufDataMqtt,(void *)(&dataPush));
+	}
+	else {
+		slog_print(SLOG_WARN,1,"<mqtt>message invalid");
+	}
+	if (vr_RingBufDataMqtt.count > 0) {
+		bufferDataMqtt_t dataPop = {{0}};
+		ring_pop_tail(&vr_RingBufDataMqtt,(void *) &dataPop);
+		JsonHandle((char *)dataPop.dataMqtt);
+	}
+	Document objDelete;
+	document.Swap(objDelete);
+#endif
+
 	char* msg = (char*)message->payload;
 	Document document;
 	document.Parse(msg);

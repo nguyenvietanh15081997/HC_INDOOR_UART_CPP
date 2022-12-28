@@ -235,6 +235,9 @@ static void ResetNode(char *msg) {
 					FunctionPer(HCI_CMD_GATEWAY_CMD, ResetNode_typedef, adr,
 							NULL8, NULL8, NULL16, NULL16, NULL16, NULL16,
 							NULL16, NULL16, NULL16, NULL16, 12);
+					FunctionPer(HCI_CMD_GATEWAY_CMD, ResetNode_typedef, adr,
+							NULL8, NULL8, NULL16, NULL16, NULL16, NULL16,
+							NULL16, NULL16, NULL16, NULL16, 12);
 				}
 			}
 		}
@@ -578,6 +581,7 @@ static void EditScene(char *msg) {
 	}
 }
 
+
 static void DelScene(char *msg) {
 	Document document;
 	document.Parse(msg);
@@ -625,7 +629,7 @@ static void DelScene(char *msg) {
 							NULL16, NULL16, NULL16, NULL16, 14);
 					for (int n = 0; n < MAX_DEV; n++) {
 						if(g_listAdrScene[n][0] == 0 && g_listAdrScene[n][1] == 0){
-							g_listAdrScene[n][0] = adrCct;
+							g_listAdrScene[n][0] = adrRgb;
 							g_listAdrScene[n][1] = sceneId;
 							break;
 						}
@@ -1586,6 +1590,12 @@ static void StartConfigRoom(char *msg){
 static void StopConfigRoom(char *msg){
 	startProcessRoom = false;
 }
+static void DelDevRoom(char *msg){
+	for (int n = 0; n < MAX_DEV; n++) {
+		g_listAdrScene[n][0] = 0;
+		g_listAdrScene[n][1] = 0;
+	}
+}
 static void DelHc(char *msg) {
 
 }
@@ -2058,7 +2068,7 @@ static void Backup2AppBle(char *msg) {
 	}
 }
 
-#define MAX_FUNCTION					59
+#define MAX_FUNCTION					60
 functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"DEVICE_CONTROL",              (DeviceControl)},
 		{"ONOFF",						(OnOff)},
@@ -2116,6 +2126,7 @@ functionProcess_t listCommandMQTT[MAX_FUNCTION] = {
 		{"RESETHC",						(ResetHc)},
 		{"START_PROCESS_ROOM",			(StartConfigRoom)},
 		{"STOP_PROCESS_ROOM",			(StopConfigRoom)},
+		{"DEL_LIST_SCENE",				(DelDevRoom)},
 		{"DELHC",						(DelHc)},
 		{"BACKUP",						(Backup_Ble)},
 		{"TTL_SET",						(TTL_Set)},
