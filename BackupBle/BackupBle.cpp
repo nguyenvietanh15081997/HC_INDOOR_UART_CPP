@@ -124,8 +124,7 @@ void BACKUP_updateNetKey(string netkey, infoDev_t gw, uint32_t index) {
 //		printf("%2x-",BACKUP_netKey[j]);
 //	}
 //	printf("\n");
-	bufferDataUart.push_back(AssignData(BACKUP_netKey, 28));
-	sleep(3);
+	bufferDataUart.push_back(AssignData(BACKUP_netKey, 28, 400));
 }
 
 void BACKUP_updateNewDevKey(infoDev_t gw) {
@@ -145,8 +144,7 @@ void BACKUP_updateNewDevKey(infoDev_t gw) {
 //		printf("%2x-",BACKUP_devKeygw[j]);
 //	}
 //	printf("\n");
-	bufferDataUart.push_back(AssignData(BACKUP_devKeygw, 21));
-	sleep(3);
+	bufferDataUart.push_back(AssignData(BACKUP_devKeygw, 21, 400));
 }
 
 void BACKUP_updateAppKey(string appkey) {
@@ -172,8 +170,7 @@ void BACKUP_updateAppKey(string appkey) {
 //		printf("%2x-",BACKUP_appKey[j]);
 //	}
 //	printf("\n");
-	bufferDataUart.push_back(AssignData(BACKUP_appKey, 22));
-	sleep(3);
+	bufferDataUart.push_back(AssignData(BACKUP_appKey, 22, 400));
 }
 
 void BACKUP_gw(infoDev_t gw) {
@@ -202,8 +199,7 @@ void BACKUP_gw(infoDev_t gw) {
 //			printf("%2x-",BACKUP_updateDevKeyGw[j]);
 //		}
 //		printf("\n");
-		bufferDataUart.push_back(AssignData(BACKUP_updateDevKeyGw, 23));
-		sleep(3);
+		bufferDataUart.push_back(AssignData(BACKUP_updateDevKeyGw, 23, 400));
 //	}
 }
 
@@ -233,14 +229,12 @@ void BACKUP_dev(vector<infoDev_t> listDev) {
 //				printf("%2x-",BACKUP_updateDevKeyDev[j]);
 //			}
 //			printf("\n");
-		bufferDataUart.push_back(AssignData(BACKUP_updateDevKeyDev, 23));
-		sleep(3);
+		bufferDataUart.push_back(AssignData(BACKUP_updateDevKeyDev, 23, 1000));
 	}
 }
 
 #define OFFSET			8
 void BACKUP_DeviceUnicastIdMax(vector<infoDev_t> listDev){
-	slog_print(SLOG_ERROR, 1, "tp1");
 	uint16_t deviceUncastId = 0;
 	vector<infoDev_t>::iterator iter_name;
 	for(iter_name = listDev.begin(); iter_name != listDev.end(); iter_name++) {
@@ -248,7 +242,6 @@ void BACKUP_DeviceUnicastIdMax(vector<infoDev_t> listDev){
 			deviceUncastId = iter_name->adr;
 		}
 	}
-	slog_print(SLOG_ERROR, 1, "tp2");
 	BACKUP_deviceUnicastId[0] = 0xe9;
 	BACKUP_deviceUnicastId[1] = 0xff;
 	BACKUP_deviceUnicastId[2] = 0x0a;
@@ -257,17 +250,14 @@ void BACKUP_DeviceUnicastIdMax(vector<infoDev_t> listDev){
 	}
 	BACKUP_deviceUnicastId[26] = (deviceUncastId + OFFSET) & 0xFF;
 	BACKUP_deviceUnicastId[27] = ((deviceUncastId + OFFSET) >> 8) & 0xFF;
-	slog_print(SLOG_ERROR, 1, "tp3");
-	bufferDataUart.push_back(AssignData(BACKUP_deviceUnicastId, 28));
-	slog_print(SLOG_ERROR, 1, "tp4");
-	sleep(1);
+	bufferDataUart.push_back(AssignData(BACKUP_deviceUnicastId, 28, 400));
 }
 
 void BACKUP_Init() {
-	bufferDataUart.push_back(AssignData(BACKUP_resetGw, 3));
+	bufferDataUart.push_back(AssignData(BACKUP_resetGw, 3, 400));
 	sleep(8);
-	bufferDataUart.push_back(AssignData(BACKUP_getInfoGw, 4));
-	bufferDataUart.push_back(AssignData(BACKUP_getPro, 3));
+	bufferDataUart.push_back(AssignData(BACKUP_getInfoGw, 4, 400));
+	bufferDataUart.push_back(AssignData(BACKUP_getPro, 3, 400));
 }
 void BACKUP2HC_callback(string db) {
 	infoDev_t gw;
@@ -306,7 +296,6 @@ void BACKUP2HC_callback(string db) {
 	} else {
 		slog_print(SLOG_WARN, 1, "<backup> don't have netkey");
 	}
-	BACKUP_DeviceUnicastIdMax(listDev);
 	BACKUP_updateNewDevKey(gw);
 	string getAppKey = "SELECT DISTINCT AppKey from Device;";
 	BACKUP_OpenDB((char*)db.c_str(),getAppKey, infoAppKey);
@@ -314,6 +303,6 @@ void BACKUP2HC_callback(string db) {
 	if (appkey.compare("null") != 0) {
 		BACKUP_updateAppKey(appkey);
 	}
-
+	BACKUP_DeviceUnicastIdMax(listDev);
 }
 

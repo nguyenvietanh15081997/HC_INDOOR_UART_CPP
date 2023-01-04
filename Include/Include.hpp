@@ -145,7 +145,7 @@ extern checkPir_t vrtsCheckPir;
 extern deque<uartSendDev_t> bufferDataUart;
 extern deque<uartSendDev_t> bufferUartUpdate;
 extern deque<string> 		bufferSendMqtt;
-uartSendDev_t AssignData(uint8_t *data,int length);
+uartSendDev_t AssignData(uint8_t *data,int length, uint32_t time);
 
 void Data2BufferSendMqtt(string s);
 bool DelItemForBufPirCmd(bufPir_t data);

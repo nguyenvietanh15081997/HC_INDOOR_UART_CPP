@@ -35,11 +35,11 @@ uint16_t g_listAdrScene[MAX_DEV][2];
 
 typeCmd_t vrte_TypeCmd;
 
-uartSendDev_t AssignData(uint8_t *data,int length){
+uartSendDev_t AssignData(uint8_t *data,int length, uint32_t time){
 	uartSendDev_t dataSendUart;
 	dataSendUart.length = length;
 	memcpy((uint8_t *)(&dataSendUart.dataUart.HCI_CMD_GATEWAY[0]), data, length);
-	dataSendUart.timeWait = 10;
+	dataSendUart.timeWait = time;
 	return dataSendUart;
 }
 

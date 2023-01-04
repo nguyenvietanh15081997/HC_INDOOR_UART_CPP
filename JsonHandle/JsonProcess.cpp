@@ -88,7 +88,7 @@ static void Send_Uart(char *msg) {
 				for (int i =0; i < (int)(strlen(uartConvertChar)/3 +1); i++){
 					sscanf((char *)uartConvertChar + i*3,"%2x" ,&uartArray[i]);
 				}
-				bufferDataUart.push_back(AssignData(uartArray,(strlen(uartConvertChar)/3 +1)));
+				bufferDataUart.push_back(AssignData(uartArray, (strlen(uartConvertChar)/3 +1), 400));
 				delete uartConvertChar;
 			}
 		}
@@ -117,7 +117,7 @@ static void Stop(char *msg) {
 	if (document.IsObject()) {
 		slog_print(SLOG_INFO, 1, "<provision>provision stop");
 		MODE_PROVISION=false;
-		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3));
+		bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop,3, 400));
 		gvrb_Provision = false;
 		stateProvision = statePro_stop;
 		if(!provisionSuccess) {

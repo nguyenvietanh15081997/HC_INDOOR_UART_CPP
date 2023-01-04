@@ -403,13 +403,14 @@ static int GWIF_ProcessData (void)
 {
 	if (vrb_GWIF_CheckNow) {
 		vrb_GWIF_CheckNow = false;
-		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
-			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
-					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
-					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
+//		if (vrts_GWIF_IncomeMessage->Message[0] == 0x81) {
+//			if ((vrts_GWIF_IncomeMessage->Message[5] != 0x82)
+//					&& (vrts_GWIF_IncomeMessage->Message[6] != 0x50)
+//					&& vrts_GWIF_IncomeMessage->Message[7] != 2) {
 				LogDataUart(1, (vrui_GWIF_LengthMeassge + 2),(void*) &vrts_GWIF_IncomeMessage->Length[0]);
-			}
-		}
+//			}
+//		}
+
 		if (gvrb_Provision) {
 			if ((vrts_GWIF_IncomeMessage->Message[0] == HCI_GATEWAY_CMD_UPDATE_MAC) && \
 					(stateProvision == statePro_findDev))
@@ -456,8 +457,8 @@ static int GWIF_ProcessData (void)
 						for (int i = 0; i < 23; i++) {
 							OUTMESSAGE_Provision[i + 3] = vrts_GWIF_IncomeMessage->Message[i + 2];
 						}
-						OUTMESSAGE_Provision[26] = (adrMax+10) & 0xFF;
-						OUTMESSAGE_Provision[27] = ((adrMax+10) >> 8) & 0xFF;
+						OUTMESSAGE_Provision[26] = (adrMax+8) & 0xFF;
+						OUTMESSAGE_Provision[27] = ((adrMax+8) >> 8) & 0xFF;
 						adr_Provision = adrMax+10;
 					}else {
 						for (int i = 0; i < 25; i++) {

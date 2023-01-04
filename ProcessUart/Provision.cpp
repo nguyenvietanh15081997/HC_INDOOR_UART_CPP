@@ -18,7 +18,8 @@
 using namespace std;
 using namespace rapidjson;
 bool provisionSuccess = false;
-string appKeyBle;
+bool gwBleAction = false;
+static string appKeyBle;
 
 uint8_t OUTMESSAGE_ScanStop[3]     = {0xE9, 0xFF, 0x01};
 uint8_t OUTMESSAGE_ScanStart[3]    = {0xE9, 0xFF, 0x00};
@@ -87,6 +88,7 @@ static int getAppKeyBLE(void *data, int argc, char **argv, char **azColName)
 	}
 	return 0;
 }
+
 static void Pro_GetDb(string cmd, string sql) {
 	sqlite3 *db;
 	int exit = 0;
@@ -115,14 +117,14 @@ static void Pro_GetDb(string cmd, string sql) {
 
 static void Pro_Scan(void) {
 	gvrb_Provision = true;
-	bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStart, 3));
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStart, 3, 10));
 	slog_print(SLOG_INFO, 1, "<provision>scan");
 	stateProvision = statePro_findDev;
 	timeCurrent = time(NULL);
 }
 static void Pro_Stop(void) {
 	gvrb_Provision = false;
-	bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop, 3));
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_ScanStop, 3, 10));
 	slog_print(SLOG_INFO, 1, "<provision>stop");
 	string s = "{\"CMD\":\"STOP\"}";
 	slog_info("<mqtt>send: %s", s.c_str());
@@ -130,14 +132,14 @@ static void Pro_Stop(void) {
 	pthread_cancel(vrpth_Pro);
 }
 static void Pro_SelectMac(void) {
-	bufferDataUart.push_back(AssignData(OUTMESSAGE_MACSelect, 9));
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_MACSelect, 9, 10));
 	slog_print(SLOG_INFO, 1, "<provision>select mac");
 	sleep(1);
 	stateProvision = statePro_getPro;
 	timeCurrent = time(NULL);
 }
 static void Pro_GetPro(void) {
-	bufferDataUart.push_back(AssignData(OUTMESSAGE_GetPro, 3));
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_GetPro, 3, 10));
 	slog_print(SLOG_INFO, 1, "<provision>getpro");
 	stateProvision = statePro_timeoutPro;
 	timeCurrent = time(NULL);
@@ -153,10 +155,10 @@ static void Pro_SetPro(void) {
 		admit_pro_internal[i + 5] = random2;
 	}
 	uint16_t adr_gw = (setpro_internal[26] | setpro_internal[27] << 8);
-	bufferDataUart.push_back(AssignData(setpro_internal, 28));
+	bufferDataUart.push_back(AssignData(setpro_internal, 28, 10));
 	slog_print(SLOG_INFO, 1, "<probision>setpro");
 	usleep(400000);
-	bufferDataUart.push_back(AssignData(admit_pro_internal, 21));
+	bufferDataUart.push_back(AssignData(admit_pro_internal, 21, 10));
 	slog_print(SLOG_INFO, 1, "<probision>admitpro");
 
 	sprintf((char*) PRO_deviceKeyGw,
@@ -200,14 +202,14 @@ static void Pro_SetPro(void) {
 	stateProvision = statePro_getPro;
 }
 static void Pro_Provision(void) {
-	bufferDataUart.push_back(AssignData(OUTMESSAGE_Provision, 28));
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_Provision, 28, 10));
 	slog_print(SLOG_INFO, 1, "<provision>provision");
 	stateProvision = statePro_timeoutPro;
 	provisionSuccess = false;
 	timeCurrent = time(NULL);
 }
 static void Pro_BindingAll(void) {
-	bufferDataUart.push_back(AssignData(OUTMESSAGE_BindingALl, 22));
+	bufferDataUart.push_back(AssignData(OUTMESSAGE_BindingALl, 22, 10));
 	slog_print(SLOG_INFO, 1, "<provision>bindingAll");
 	stateProvision = statePro_timeoutPro;
 	timeCurrent = time(NULL);
@@ -215,7 +217,7 @@ static void Pro_BindingAll(void) {
 static void Pro_SaveGate(void) {
 	save_gw[8] = adr_Provision;
 	save_gw[9] = (adr_Provision >> 8) & 0xFF;
-	bufferDataUart.push_back(AssignData(save_gw, 23));
+	bufferDataUart.push_back(AssignData(save_gw, 23, 10));
 	stateProvision = statePro_timeoutPro;
 	timeCurrent = time(NULL);
 }
@@ -233,7 +235,7 @@ static void Pro_TypeDev(void) {
 	for (int i = 0; i < 6; i++) {
 		request_type[i+17] = out[i+10];
 	}
-	bufferDataUart.push_back(AssignData(request_type, 23));
+	bufferDataUart.push_back(AssignData(request_type, 23, 10));
 	stateProvision = statePro_timeoutPro;
 	timeCurrent = time(NULL);
 }
@@ -245,7 +247,7 @@ static void TimeoutPro(void) {
 			timeCurrent = timeLast;
 			reset_Node[8] = adr_Provision & 0xFF;
 			reset_Node[9] = (adr_Provision >> 8) & 0xFF;
-			bufferDataUart.push_back(AssignData(reset_Node, 12));
+			bufferDataUart.push_back(AssignData(reset_Node, 12, 10));
 			sleep(1);
 			stateProvision = statePro_scan;
 		}
@@ -266,11 +268,12 @@ static void FindDev(void){
 static void Pro_ResetNode(void){
 	reset_Node[8] = adr_Provision & 0xFF;
 	reset_Node[9] = (adr_Provision >> 8) & 0xFF;
-	bufferDataUart.push_back(AssignData(reset_Node, 12));
+	bufferDataUart.push_back(AssignData(reset_Node, 12, 10));
 	stateProvision = statePro_scan;
 }
 
 static void Pro_GetInfoMeshBle() {
+	//Get app key
 	string sql = "SELECT AppKey FROM Device Where DeviceId NOT NULL;";
 	Pro_GetDb("getAppKey",sql);
 	slog_info("Appkey: %s", appKeyBle.c_str());
@@ -290,6 +293,7 @@ static void Pro_GetInfoMeshBle() {
 		}
 	}
 
+	//Get Device Unicast Max
 	string sql1 = "SELECT Max(DeviceunicastId) FROM Device Where DeviceId NOT NULL;";
 	Pro_GetDb("getAddMax",sql1);
 	slog_info("Device unicast max: %d", adrMax);
@@ -300,12 +304,15 @@ void (*state_Table[])(void) = { Pro_Scan, Pro_Stop, Pro_SelectMac, Pro_GetPro,
 		Pro_TypeDev, TimeoutPro, FindDev, Pro_ResetNode};
 
 static statePro_t stateCurrent, stateLast;
-void *Pro_Thread(void *argv){
+void *Pro_Thread(void *argv)
+{
 	stateCurrent = statePro_null;
 	Pro_GetInfoMeshBle();
-	while(MODE_PROVISION){
+	while(MODE_PROVISION)
+	{
 		stateLast = stateProvision;
-		if(stateLast != stateCurrent){
+		if(stateLast != stateCurrent)
+		{
 			state_Table[stateProvision]();
 			stateCurrent = stateLast;
 		}
